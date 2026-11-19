@@ -4,11 +4,12 @@ import 'package:plasmobile/core/config/app_env.dart';
 import 'package:plasmobile/core/network/auth_interceptor.dart';
 import 'package:plasmobile/core/network/error_interceptor.dart';
 import 'package:plasmobile/core/network/idempotency_interceptor.dart';
+import 'package:plasmobile/data/services/auth_service.dart';
 
 const Duration kAiRequestTimeout = Duration(seconds: 35);
 
 final accessTokenProvider = Provider<AccessTokenProvider>(
-  (ref) => () async => null,
+  (ref) => () => ref.watch(authServiceProvider).getAccessToken(),
 );
 
 Dio createPlasDio({

@@ -1,6 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:plasmobile/core/config/app_env.dart';
-import 'package:plasmobile/core/network/dio_client.dart';
 import 'package:plasmobile/core/sync/pending_sync_queue.dart';
 import 'package:plasmobile/data/dto/ai_dto.dart';
 import 'package:plasmobile/data/dto/exercise_dto.dart';
@@ -9,8 +6,6 @@ import 'package:plasmobile/data/dto/progress_dto.dart';
 import 'package:plasmobile/data/dto/student_answer.dart';
 import 'package:plasmobile/data/dto/student_profile_dto.dart';
 import 'package:plasmobile/data/dto/test_dto.dart';
-import 'package:plasmobile/data/repositories/api_plas_repository.dart';
-import 'package:plasmobile/data/repositories/mock_plas_repository.dart';
 
 /// Unified student mobile data boundary covering the 24 PLAS REST endpoints
 /// (API Spec 4.1-4.6) plus offline sync replay.
@@ -84,10 +79,3 @@ abstract interface class PlasRepository {
   // Offline Sync Replay
   Future<void> replayPendingSyncItem(PendingSyncItem item);
 }
-
-final plasRepositoryProvider = Provider<PlasRepository>((ref) {
-  if (AppEnv.useMock) {
-    return MockPlasRepository();
-  }
-  return ApiPlasRepository(dio: ref.watch(dioProvider));
-});
