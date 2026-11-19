@@ -199,15 +199,29 @@ class PlasErrorView extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(48, 48),
-                  foregroundColor: PlasColors.errorText,
-                  backgroundColor: PlasColors.bgSurface,
-                  side: const BorderSide(color: PlasColors.errorBorder),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(PlasRadii.md),
+                style: ButtonStyle(
+                  minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
+                  foregroundColor: const WidgetStatePropertyAll(
+                    PlasColors.errorText,
                   ),
-                  textStyle: PlasTypography.label,
+                  backgroundColor: const WidgetStatePropertyAll(
+                    PlasColors.bgSurface,
+                  ),
+                  side: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.focused)) {
+                      return const BorderSide(
+                        color: PlasColors.focusLight,
+                        width: 2,
+                      );
+                    }
+                    return const BorderSide(color: PlasColors.errorBorder);
+                  }),
+                  shape: WidgetStatePropertyAll(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(PlasRadii.md),
+                    ),
+                  ),
+                  textStyle: const WidgetStatePropertyAll(PlasTypography.label),
                 ),
                 onPressed: onRetry,
                 child: Text(actionLabel, textAlign: TextAlign.center),
@@ -268,15 +282,38 @@ class PlasOfflineSyncBanner extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(48, 48),
-                foregroundColor: PlasColors.warningText,
-                backgroundColor: PlasColors.bgSurface,
-                side: const BorderSide(color: PlasColors.warningBorder),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(PlasRadii.md),
+              style: ButtonStyle(
+                minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
+                shape: WidgetStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(PlasRadii.md),
+                  ),
                 ),
-                textStyle: PlasTypography.label,
+                textStyle: const WidgetStatePropertyAll(PlasTypography.label),
+                foregroundColor: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.disabled)) {
+                    return PlasColors.disabledText;
+                  }
+                  return PlasColors.warningText;
+                }),
+                backgroundColor: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.disabled)) {
+                    return PlasColors.disabledBg;
+                  }
+                  return PlasColors.bgSurface;
+                }),
+                side: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.disabled)) {
+                    return const BorderSide(color: PlasColors.disabledBorder);
+                  }
+                  if (states.contains(WidgetState.focused)) {
+                    return const BorderSide(
+                      color: PlasColors.focusLight,
+                      width: 2,
+                    );
+                  }
+                  return const BorderSide(color: PlasColors.warningBorder);
+                }),
               ),
               onPressed: isSyncing ? null : onRetry,
               child: Text(

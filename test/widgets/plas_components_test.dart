@@ -207,6 +207,17 @@ void main() {
         logoutButton.style?.backgroundColor?.resolve(<WidgetState>{}),
         PlasColors.errorBorder,
       );
+      expect(
+        logoutButton.style?.side?.resolve(<WidgetState>{WidgetState.focused}),
+        const BorderSide(color: PlasColors.focusLight, width: 2),
+      );
+      final cancelButton = tester.widget<OutlinedButton>(
+        find.widgetWithText(OutlinedButton, 'Batal'),
+      );
+      expect(
+        cancelButton.style?.side?.resolve(<WidgetState>{WidgetState.focused}),
+        const BorderSide(color: PlasColors.focusLight, width: 2),
+      );
       await tester.tap(find.text('Batal'));
       await tester.pumpAndSettle();
     });
@@ -244,6 +255,7 @@ void main() {
         for (var i = 0; i < labels.length; i++) {
           final label = labels[i];
           expect(find.text(label), findsOneWidget);
+          expect(find.bySemanticsLabel(label), findsOneWidget);
           final inkWell = find.ancestor(
             of: find.text(label),
             matching: find.byType(InkWell),
@@ -352,6 +364,14 @@ void main() {
       );
       expect(find.byIcon(Symbols.error), findsOneWidget);
 
+      final retryButton = tester.widget<OutlinedButton>(
+        find.byType(OutlinedButton),
+      );
+      expect(
+        retryButton.style?.side?.resolve(<WidgetState>{WidgetState.focused}),
+        const BorderSide(color: PlasColors.focusLight, width: 2),
+      );
+
       await tester.tap(find.text('Coba Lagi'));
       await tester.pump();
       expect(retried, isTrue);
@@ -400,6 +420,28 @@ void main() {
           find.byType(OutlinedButton),
         );
         expect(button.onPressed, isNull);
+        expect(
+          button.style?.foregroundColor?.resolve(<WidgetState>{
+            WidgetState.disabled,
+          }),
+          PlasColors.disabledText,
+        );
+        expect(
+          button.style?.backgroundColor?.resolve(<WidgetState>{
+            WidgetState.disabled,
+          }),
+          PlasColors.disabledBg,
+        );
+        expect(
+          button.style?.side
+              ?.resolve(<WidgetState>{WidgetState.disabled})
+              ?.color,
+          PlasColors.disabledBorder,
+        );
+        expect(
+          button.style?.side?.resolve(<WidgetState>{WidgetState.focused}),
+          const BorderSide(color: PlasColors.focusLight, width: 2),
+        );
         await tester.tap(find.text('Mengirim Ulang...'));
         await tester.pump();
         expect(retriedCount, 1);

@@ -79,12 +79,13 @@ class _PlasVectorAsset extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasLabel = semanticLabel != null && semanticLabel!.trim().isNotEmpty;
     return SvgPicture.asset(
       assetPath,
       width: size,
       height: size,
-      excludeFromSemantics: semanticLabel == null,
-      semanticsLabel: semanticLabel,
+      excludeFromSemantics: !hasLabel,
+      semanticsLabel: hasLabel ? semanticLabel : null,
     );
   }
 }

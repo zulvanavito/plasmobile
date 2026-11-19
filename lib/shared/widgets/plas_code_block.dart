@@ -270,12 +270,21 @@ class PlasCodeBlock extends StatelessWidget {
                           : const SizedBox.shrink(),
                     ),
                     if (resolvedFilename != null)
-                      const SizedBox(width: PlasSpacing.space3),
-                    Text(
-                      resolvedLanguage,
-                      style: metaStyle,
-                      maxLines: 1,
-                      softWrap: false,
+                      const SizedBox(width: PlasSpacing.space3)
+                    else
+                      const SizedBox(width: PlasSpacing.space2),
+                    Flexible(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        heightFactor: 1.0,
+                        child: Text(
+                          resolvedLanguage,
+                          style: metaStyle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                        ),
+                      ),
                     ),
                   ],
                 ),

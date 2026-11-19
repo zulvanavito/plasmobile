@@ -47,6 +47,12 @@ class PlasConfirmDialog extends StatelessWidget {
         }
         return isDestructive ? PlasColors.errorBorder : PlasColors.brandPrimary;
       }),
+      side: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.focused)) {
+          return const BorderSide(color: PlasColors.focusLight, width: 2);
+        }
+        return BorderSide.none;
+      }),
     );
 
     final cancelStyle = ButtonStyle(
@@ -61,9 +67,12 @@ class PlasConfirmDialog extends StatelessWidget {
       textStyle: WidgetStatePropertyAll(PlasTypography.label),
       foregroundColor: const WidgetStatePropertyAll(PlasColors.textPrimary),
       backgroundColor: const WidgetStatePropertyAll(PlasColors.bgSurface),
-      side: const WidgetStatePropertyAll(
-        BorderSide(color: PlasColors.borderInteractive),
-      ),
+      side: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.focused)) {
+          return const BorderSide(color: PlasColors.focusLight, width: 2);
+        }
+        return const BorderSide(color: PlasColors.borderInteractive);
+      }),
     );
 
     return Dialog(

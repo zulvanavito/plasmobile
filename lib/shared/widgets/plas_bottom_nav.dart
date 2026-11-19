@@ -66,6 +66,8 @@ class _PlasNavTab extends StatelessWidget {
       button: true,
       selected: isSelected,
       label: item.label,
+      excludeSemantics: true,
+      onTap: onTap,
       child: Material(
         type: MaterialType.transparency,
         child: InkWell(
