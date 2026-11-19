@@ -6,6 +6,13 @@ Format mengacu pada Keep a Changelog dengan tanggal zona lokal `Asia/Makassar` (
 ## [Unreleased]
 
 ### Added
+- **Tahap 3: Layer Data Contract-Driven & Autentikasi (2026-11-19)**
+  - Penambahan DTO aman mahasiswa di `lib/data/dto/` tanpa package codegen tambahan: `student_answer.dart`, `student_profile_dto.dart`, `material_dto.dart`, `exercise_dto.dart`, `test_dto.dart`, `ai_dto.dart`, dan `progress_dto.dart` (nol field kunci jawaban `P13`, enum uppercase `IN_PROGRESS`/`SUBMITTED` tanpa `EXPIRED`, serta `AiAskResponseDto` dengan field nullable untuk `already_processed`).
+  - Penambahan `sealed class StudentAnswer` (`McAnswer`, `TfAnswer`, `FibAnswer`) dengan validasi ketat payload kanonis `P6` (1 key saja: `option_id` atau `value`, maksimal 255 karakter untuk `FIB`, menolak key ekstra dengan error `422 invalid_answer`).
+  - Penambahan abstraksi autentikasi `AuthService` beserta `SupabaseAuthService` (khusus `GoTrueClient` + `GoogleSignIn` `signInWithIdToken` tanpa akses langsung tabel Supabase `P1`/`P4`) dan `MockAuthService` (`authServiceProvider`), terhubung ke `accessTokenProvider` pada `lib/core/network/dio_client.dart`.
+  - Penambahan kontrak `PlasRepository` (24 operasi REST API Mobile `§4.1` hingga `§4.6` ditambah `replayPendingSyncItem`) dan `ApiPlasRepository` di `lib/data/repositories/` dengan `Idempotency-Key` milik pemanggil, timeout AI `35` detik (`kAiRequestTimeout`), dan konversi `DioException` ke `PlasApiException`.
+  - Penambahan `MockSeedData` (2 kelas, NIM konflik `'2115099999'`, 7 materi pemrograman dasar TypeScript dengan blok kode ```` ```ts ```` dan latihan seragam `MC`/`TF`/`FIB`, serta Pre-Test dan Post-Test 5 soal campuran) dan `MockPlasRepository` (`DBR-14`, `DBR-15`, batas `3/3` attempt, fingerprint idempotensi `P2`, urutan linear dan `question_started_at` set-if-NULL `P7`, evaluasi FIB Levenshtein >= 70%, kuota AI `10/10 WITA` `P12`, dan `replayPendingSyncItem`) beserta `plasRepositoryProvider`.
+  - Penambahan 4 berkas unit test di `test/data/`: `student_answer_dto_test.dart`, `auth_service_test.dart`, `api_plas_repository_test.dart`, dan `mock_plas_repository_test.dart`.
 - **Tahap 2: Design System v1.1 & Komponen Inti (2026-11-19)**
   - Bundling font lokal statis ke `assets/fonts/` (`Plus Jakarta Sans` weight `400`/`500`/`600`/`700` dan `JetBrains Mono` weight `400`/`600`) serta pendaftaran pada `pubspec.yaml` untuk rendering Zero-CLS dan dukungan offline.
   - Penambahan 4 aset SVG vektor murni di `assets/svg/` (`owl_bracket.svg`, `owl_bracket_outline.svg`, `google_logo.svg`, `app_logo_ts.svg`) tanpa tag `<text>`.
@@ -32,6 +39,7 @@ Format mengacu pada Keep a Changelog dengan tanggal zona lokal `Asia/Makassar` (
   - 6 berkas unit test inti (`test/core/`): `api_error_codes_test.dart`, `app_router_test.dart`, `interceptors_test.dart`, `levenshtein_test.dart`, `pending_sync_queue_test.dart`, dan `wita_clock_test.dart`.
 
 ### Changed
+- Menghubungkan `accessTokenProvider` (`lib/core/network/dio_client.dart`) secara default ke `authServiceProvider.getAccessToken()`.
 - Menyempurnakan `buildPlasTheme()` (`lib/core/theme/plas_theme.dart`) dan `main.dart` dengan `SystemUiOverlayStyle` Light Mode, `ProgressIndicatorThemeData`, `DividerThemeData`, `TextSelectionThemeData`, dan `SnackBarThemeData`.
 - Mengganti `NavigationBar` sementara pada `_AppShellScaffold` (`lib/core/router/app_router.dart`) dengan `PlasBottomNav`.
 - Menyesuaikan impor material di `lib/app.dart`, `lib/core/router/app_router.dart`, `lib/core/theme/plas_theme.dart`, dan `lib/core/theme/plas_tokens.dart` ke `package:material_ui/material_ui.dart` mengikuti ketentuan Flutter 3.50.0.
@@ -40,4 +48,4 @@ Format mengacu pada Keep a Changelog dengan tanggal zona lokal `Asia/Makassar` (
 
 ### Verification
 - `flutter analyze`: lulus (`No issues found!`).
-- `flutter test`: seluruh 54 test lulus (21 unit test pada `test/core/` dan 33 widget/unit test pada `test/widgets/`).
+- `flutter test`: seluruh 84 test lulus (21 unit test pada `test/core/`, 30 unit test pada `test/data/`, dan 33 widget/unit test pada `test/widgets/`).

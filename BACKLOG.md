@@ -40,13 +40,13 @@
 - [x] Widget test komponen inti dan audit Delivery Gate Tahap 2
 
 ## Tahap 3: Layer Data Contract-Driven (`DTO` + `MockPlasRepository` & `ApiPlasRepository`)
-- [ ] Definisi DTO kontrak `API Specification §4.1` sampai `§4.6` (tanpa kunci jawaban di DTO mahasiswa `P13`)
-- [ ] `sealed class StudentAnswer` (`McAnswer`, `TfAnswer`, `FibAnswer`) dengan JSON kanonis ketat `P6` (tanpa extra key)
-- [ ] Abstraksi `AuthService`, `SupabaseAuthService` (Email+Sandi & Google Sign-In), dan `MockAuthService`
-- [ ] Kontrak `PlasRepository` (24 operasi endpoint Mobile)
-- [ ] Implementasi `MockPlasRepository` + `mock_seed_data.dart` (7 materi TypeScript, soal MC/TF/FIB, `DBR-14`, `DBR-15`, batas `3/3 attempt`, kuota `10/10 WITA`, evaluasi FIB Levenshtein >= 70%)
-- [ ] Implementasi `ApiPlasRepository` (terhubung ke `Dio` + `PendingSyncNotifier` + `kAiRequestTimeout`)
-- [ ] Unit test kontrak JSON `P6`, aturan `DBR-14`/`DBR-15`, batas `3/3`, kuota WITA, dan `P13` (zero answer key leakage)
+- [x] Definisi DTO kontrak `API Specification §4.1` sampai `§4.6` (tanpa kunci jawaban di DTO mahasiswa `P13`)
+- [x] `sealed class StudentAnswer` (`McAnswer`, `TfAnswer`, `FibAnswer`) dengan JSON kanonis ketat `P6` (tanpa extra key)
+- [x] Abstraksi `AuthService`, `SupabaseAuthService` (Email+Sandi & Google Sign-In), dan `MockAuthService`
+- [x] Kontrak `PlasRepository` (24 operasi endpoint Mobile)
+- [x] Implementasi `MockPlasRepository` + `mock_seed_data.dart` (7 materi TypeScript, soal MC/TF/FIB, `DBR-14`, `DBR-15`, batas `3/3 attempt`, kuota `10/10 WITA`, evaluasi FIB Levenshtein >= 70%)
+- [x] Implementasi `ApiPlasRepository` (terhubung ke `Dio` + `PendingSyncNotifier` + `kAiRequestTimeout`)
+- [x] Unit test kontrak JSON `P6`, aturan `DBR-14`/`DBR-15`, batas `3/3`, kuota WITA, dan `P13` (zero answer key leakage)
 
 ## Tahap 4: Implementasi Layar `M01` sampai `M15`
 - [ ] `M01 - Splash` & pemeriksaan sesi auth + redirect onboarding/beranda
