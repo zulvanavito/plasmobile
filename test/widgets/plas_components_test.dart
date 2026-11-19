@@ -496,6 +496,10 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
 
+        await tester.ensureVisible(find.text('Buka Dialog'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+
         await tester.tap(find.text('Buka Dialog'));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);

@@ -25,6 +25,8 @@ class TanyaAiFab extends StatelessWidget {
     return Semantics(
       button: true,
       label: 'Buka AI Learning Assistant',
+      excludeSemantics: true,
+      onTap: onPressed,
       child: Container(
         decoration: BoxDecoration(
           color: PlasColors.codeBg,
