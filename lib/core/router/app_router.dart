@@ -1,9 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:plasmobile/core/router/app_routes.dart';
 import 'package:plasmobile/core/theme/plas_tokens.dart';
+import 'package:plasmobile/shared/widgets/plas_bottom_nav.dart';
 
 enum AuthGateStatus {
   loading,
@@ -194,37 +194,14 @@ class _AppShellScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        height: 64,
-        backgroundColor: PlasColors.bgSurface,
-        indicatorColor: PlasColors.brandTint,
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) {
+      bottomNavigationBar: PlasBottomNav(
+        currentIndex: navigationShell.currentIndex,
+        onTap: (index) {
           navigationShell.goBranch(
             index,
             initialLocation: index == navigationShell.currentIndex,
           );
         },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Symbols.menu_book, color: PlasColors.textMuted),
-            selectedIcon: Icon(Symbols.menu_book, color: PlasColors.brandPrimary),
-            label: 'Belajar',
-          ),
-          NavigationDestination(
-            icon: Icon(Symbols.history, color: PlasColors.textMuted),
-            selectedIcon: Icon(Symbols.history, color: PlasColors.brandPrimary),
-            label: 'Riwayat',
-          ),
-          NavigationDestination(
-            icon: Icon(Symbols.account_circle, color: PlasColors.textMuted),
-            selectedIcon: Icon(
-              Symbols.account_circle,
-              color: PlasColors.brandPrimary,
-            ),
-            label: 'Profil',
-          ),
-        ],
       ),
     );
   }

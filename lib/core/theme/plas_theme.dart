@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:plasmobile/core/theme/plas_tokens.dart';
 
@@ -36,9 +37,38 @@ ThemeData buildPlasTheme() {
       elevation: 0,
       scrolledUnderElevation: 0,
       titleTextStyle: PlasTypography.heading,
+      systemOverlayStyle: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: PlasColors.bgSurface,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
       shape: const Border(
         bottom: BorderSide(color: PlasColors.borderSubtle),
       ),
+    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: PlasColors.brandPrimary,
+      linearTrackColor: PlasColors.borderSubtle,
+    ),
+    dividerTheme: const DividerThemeData(
+      color: PlasColors.borderSubtle,
+      thickness: 1,
+      space: 1,
+    ),
+    textSelectionTheme: const TextSelectionThemeData(
+      cursorColor: PlasColors.brandPrimary,
+      selectionHandleColor: PlasColors.brandPrimary,
+      selectionColor: Color(0x331D4ED8),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: PlasColors.textPrimary,
+      contentTextStyle: PlasTypography.body.copyWith(color: Colors.white),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(PlasRadii.md),
+      ),
+      behavior: SnackBarBehavior.floating,
     ),
     cardTheme: CardThemeData(
       color: PlasColors.bgSurface,
