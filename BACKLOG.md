@@ -28,16 +28,16 @@
 - [x] Verifikasi `flutter analyze` dan seluruh unit test `test/core/` lulus tanpa error
 
 ## Tahap 2: Design System & Komponen Inti (`DESIGN.md v1.1`)
-- [ ] Bundling font lokal `Plus Jakarta Sans` dan `JetBrains Mono` di `assets/fonts/` + registrasi di `pubspec.yaml`
-- [ ] Aset SVG vektor nyata di `assets/svg/` (`owl_bracket.svg`, `google_logo.svg`, `app_logo_ts.svg`)
-- [ ] Widget `PlasCodeBlock` (header `#1E293B`, fallback `TYPESCRIPT`, nomor baris `#94A3B8`, isi `#0F172A`, syntax tint TypeScript, scroll horizontal terisolasi)
-- [ ] Widget `PlasStatusBadge` (ikon vektor + teks untuk Success, Error, Warning, Neutral)
-- [ ] Widget `OwlBracketMascot` dan `TanyaAiFab` (`48dp`, `#0F172A`, border `#1E293B`)
-- [ ] Widget `ConfirmDialog` (submit tes, submit latihan, logout; radius `20px`, `shadow.overlay`)
-- [ ] Widget `PlasBottomNav` 3 tab (`Belajar`, `Riwayat`, `Profil`, tinggi `64dp`)
-- [ ] Widget `PlasStateViews` (4 data states wajib: Loading zero-CLS, Empty berilustrasi Owl Bracket, Error terpetakan, Offline/Pending Sync banner)
-- [ ] Widget `PlasMarkdownView` (parser fenced-Markdown SubMateri yang merender blok `.ts` via `PlasCodeBlock`)
-- [ ] Widget test komponen inti dan audit Delivery Gate Tahap 2
+- [x] Bundling font lokal `Plus Jakarta Sans` dan `JetBrains Mono` di `assets/fonts/` + registrasi di `pubspec.yaml`
+- [x] Aset SVG vektor nyata di `assets/svg/` (`owl_bracket.svg`, `google_logo.svg`, `app_logo_ts.svg`)
+- [x] Widget `PlasCodeBlock` (header `#1E293B`, fallback `TYPESCRIPT`, nomor baris `#94A3B8`, isi `#0F172A`, syntax tint TypeScript, scroll horizontal terisolasi)
+- [x] Widget `PlasStatusBadge` (ikon vektor + teks untuk Success, Error, Warning, Neutral)
+- [x] Widget `OwlBracketMascot` dan `TanyaAiFab` (`48dp`, `#0F172A`, border `#1E293B`)
+- [x] Widget `ConfirmDialog` (submit tes, submit latihan, logout; radius `20px`, `shadow.overlay`)
+- [x] Widget `PlasBottomNav` 3 tab (`Belajar`, `Riwayat`, `Profil`, tinggi `64dp`)
+- [x] Widget `PlasStateViews` (4 data states wajib: Loading zero-CLS, Empty berilustrasi Owl Bracket, Error terpetakan, Offline/Pending Sync banner)
+- [x] Widget `PlasMarkdownView` (parser fenced-Markdown SubMateri yang merender blok `.ts` via `PlasCodeBlock`)
+- [x] Widget test komponen inti dan audit Delivery Gate Tahap 2
 
 ## Tahap 3: Layer Data Contract-Driven (`DTO` + `MockPlasRepository` & `ApiPlasRepository`)
 - [ ] Definisi DTO kontrak `API Specification §4.1` sampai `§4.6` (tanpa kunci jawaban di DTO mahasiswa `P13`)
