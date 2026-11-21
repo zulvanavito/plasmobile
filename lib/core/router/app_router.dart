@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:plasmobile/core/router/app_routes.dart';
 import 'package:plasmobile/core/theme/plas_tokens.dart';
+import 'package:plasmobile/features/auth/presentation/auth_screen.dart';
+import 'package:plasmobile/features/auth/presentation/onboarding_class_screen.dart';
+import 'package:plasmobile/features/auth/presentation/onboarding_identity_screen.dart';
+import 'package:plasmobile/features/auth/presentation/splash_screen.dart';
 import 'package:plasmobile/shared/widgets/plas_bottom_nav.dart';
 
 enum AuthGateStatus {
@@ -66,31 +70,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: AppRoutes.splash,
-        builder: (context, state) => const _StagePlaceholderScreen(
-          code: 'M01',
-          title: 'Splash & Pemeriksaan Sesi',
-        ),
+        builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         path: AppRoutes.auth,
-        builder: (context, state) => const _StagePlaceholderScreen(
-          code: 'M02',
-          title: 'Masuk / Daftar Mahasiswa',
-        ),
+        builder: (context, state) => const AuthScreen(),
       ),
       GoRoute(
         path: AppRoutes.onboardingIdentity,
-        builder: (context, state) => const _StagePlaceholderScreen(
-          code: 'M03',
-          title: 'Lengkapi Identitas Mahasiswa',
-        ),
+        builder: (context, state) => const OnboardingIdentityScreen(),
       ),
       GoRoute(
         path: AppRoutes.onboardingClass,
-        builder: (context, state) => const _StagePlaceholderScreen(
-          code: 'M04',
-          title: 'Gabung Kelas',
-        ),
+        builder: (context, state) => const OnboardingClassScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
