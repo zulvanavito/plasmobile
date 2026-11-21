@@ -24,6 +24,7 @@ import 'package:plasmobile/features/auth/presentation/auth_screen.dart';
 import 'package:plasmobile/features/auth/presentation/onboarding_class_screen.dart';
 import 'package:plasmobile/features/auth/presentation/onboarding_identity_screen.dart';
 import 'package:plasmobile/features/auth/presentation/splash_screen.dart';
+import 'package:plasmobile/features/learn/presentation/learn_home_screen.dart';
 import 'package:plasmobile/features/shared/providers/plas_providers.dart';
 import 'package:plasmobile/shared/widgets/plas_state_views.dart';
 import 'package:plasmobile/shared/widgets/plas_status_badge.dart';
@@ -486,7 +487,7 @@ void main() {
         await _tapVisible(tester, find.text('Coba Lagi'));
         await tester.pumpAndSettle();
 
-        expect(find.text('M05'), findsOneWidget);
+        expect(find.byType(LearnHomeScreen), findsOneWidget);
       },
     );
 
@@ -519,7 +520,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('M05'), findsOneWidget);
+      expect(find.byType(LearnHomeScreen), findsOneWidget);
 
       authService.simulateRemoteSignOut();
       await tester.pumpAndSettle();
@@ -910,7 +911,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(repository.updatedClassIds, <String?>['kelas-ti2a-2026']);
-        expect(find.text('M05'), findsOneWidget);
+        expect(find.byType(LearnHomeScreen), findsOneWidget);
       },
     );
 
@@ -957,7 +958,7 @@ void main() {
           prefs.getBool(classOnboardingDoneKey('mhs-01')),
           isTrue,
         );
-        expect(find.text('M05'), findsOneWidget);
+        expect(find.byType(LearnHomeScreen), findsOneWidget);
 
         final authService2 = _TestAuthService(
           initialUser: const AuthSessionUser(
@@ -987,7 +988,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(OnboardingClassScreen), findsNothing);
-        expect(find.text('M05'), findsOneWidget);
+        expect(find.byType(LearnHomeScreen), findsOneWidget);
       },
     );
   });

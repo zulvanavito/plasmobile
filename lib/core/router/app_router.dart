@@ -7,6 +7,9 @@ import 'package:plasmobile/features/auth/presentation/auth_screen.dart';
 import 'package:plasmobile/features/auth/presentation/onboarding_class_screen.dart';
 import 'package:plasmobile/features/auth/presentation/onboarding_identity_screen.dart';
 import 'package:plasmobile/features/auth/presentation/splash_screen.dart';
+import 'package:plasmobile/features/learn/presentation/learn_home_screen.dart';
+import 'package:plasmobile/features/learn/presentation/material_detail_screen.dart';
+import 'package:plasmobile/features/learn/presentation/submaterial_read_screen.dart';
 import 'package:plasmobile/shared/widgets/plas_bottom_nav.dart';
 
 enum AuthGateStatus {
@@ -93,10 +96,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.learn,
-                builder: (context, state) => const _StagePlaceholderScreen(
-                  code: 'M05',
-                  title: 'Beranda Belajar & Gerbang Tes',
-                ),
+                builder: (context, state) => const LearnHomeScreen(),
               ),
             ],
           ),
@@ -126,16 +126,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/materials/:materialId',
-        builder: (context, state) => _StagePlaceholderScreen(
-          code: 'M06',
-          title: 'SubMateri & Exercise (${state.pathParameters['materialId']})',
+        builder: (context, state) => MaterialDetailScreen(
+          materialId: state.pathParameters['materialId']!,
         ),
       ),
       GoRoute(
         path: '/sub-materials/:submaterialId',
-        builder: (context, state) => _StagePlaceholderScreen(
-          code: 'M07',
-          title: 'Baca SubMateri (${state.pathParameters['submaterialId']})',
+        builder: (context, state) => SubMaterialReadScreen(
+          submaterialId: state.pathParameters['submaterialId']!,
         ),
       ),
       GoRoute(
