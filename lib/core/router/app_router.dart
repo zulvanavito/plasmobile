@@ -7,6 +7,8 @@ import 'package:plasmobile/features/auth/presentation/auth_screen.dart';
 import 'package:plasmobile/features/auth/presentation/onboarding_class_screen.dart';
 import 'package:plasmobile/features/auth/presentation/onboarding_identity_screen.dart';
 import 'package:plasmobile/features/auth/presentation/splash_screen.dart';
+import 'package:plasmobile/features/exercise/presentation/exercise_review_screen.dart';
+import 'package:plasmobile/features/exercise/presentation/exercise_session_screen.dart';
 import 'package:plasmobile/features/learn/presentation/learn_home_screen.dart';
 import 'package:plasmobile/features/learn/presentation/material_detail_screen.dart';
 import 'package:plasmobile/features/learn/presentation/submaterial_read_screen.dart';
@@ -138,16 +140,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/exercises/:exerciseId/session',
-        builder: (context, state) => _StagePlaceholderScreen(
-          code: 'M08',
-          title: 'Sesi Latihan (${state.pathParameters['exerciseId']})',
+        builder: (context, state) => ExerciseSessionScreen(
+          exerciseId: state.pathParameters['exerciseId']!,
+          submaterialId: state.uri.queryParameters['submaterialId'],
         ),
       ),
       GoRoute(
         path: '/exercise-attempts/:attemptId/review',
-        builder: (context, state) => _StagePlaceholderScreen(
-          code: 'M13',
-          title: 'Review Latihan (${state.pathParameters['attemptId']})',
+        builder: (context, state) => ExerciseReviewScreen(
+          attemptId: state.pathParameters['attemptId']!,
         ),
       ),
       GoRoute(
