@@ -12,6 +12,8 @@ import 'package:plasmobile/features/exercise/presentation/exercise_session_scree
 import 'package:plasmobile/features/learn/presentation/learn_home_screen.dart';
 import 'package:plasmobile/features/learn/presentation/material_detail_screen.dart';
 import 'package:plasmobile/features/learn/presentation/submaterial_read_screen.dart';
+import 'package:plasmobile/features/test_eval/presentation/test_result_screen.dart';
+import 'package:plasmobile/features/test_eval/presentation/test_session_screen.dart';
 import 'package:plasmobile/shared/widgets/plas_bottom_nav.dart';
 
 enum AuthGateStatus {
@@ -153,16 +155,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/tests/:testId/session',
-        builder: (context, state) => _StagePlaceholderScreen(
-          code: 'M10',
-          title: 'Sesi Pre/Post-Test (${state.pathParameters['testId']})',
+        builder: (context, state) => TestSessionScreen(
+          testId: state.pathParameters['testId']!,
         ),
       ),
       GoRoute(
         path: '/test-attempts/:attemptId/result',
-        builder: (context, state) => _StagePlaceholderScreen(
-          code: 'M12',
-          title: 'Hasil Evaluasi (${state.pathParameters['attemptId']})',
+        builder: (context, state) => TestResultScreen(
+          attemptId: state.pathParameters['attemptId']!,
         ),
       ),
     ],
