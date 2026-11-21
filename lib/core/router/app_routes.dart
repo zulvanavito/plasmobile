@@ -11,8 +11,16 @@ abstract final class AppRoutes {
   static String materialDetail(String materialId) => '/materials/$materialId';
   static String subMaterialRead(String submaterialId) =>
       '/sub-materials/$submaterialId';
-  static String exerciseSession(String exerciseId) =>
-      '/exercises/$exerciseId/session';
+  static String exerciseSession(String exerciseId, {String? submaterialId}) {
+    final base = '/exercises/$exerciseId/session';
+    if (submaterialId == null || submaterialId.isEmpty) {
+      return base;
+    }
+    return Uri(
+      path: base,
+      queryParameters: <String, String>{'submaterialId': submaterialId},
+    ).toString();
+  }
   static String exerciseReview(String attemptId) =>
       '/exercise-attempts/$attemptId/review';
   static String testSession(String testId) => '/tests/$testId/session';
