@@ -6,6 +6,14 @@ Format mengacu pada Keep a Changelog dengan tanggal zona lokal `Asia/Makassar` (
 ## [Unreleased]
 
 ### Added
+- **Tahap 4: Implementasi Layar `M01` sampai `M15` (2026-11-21)**
+  - Penambahan penyedia data bersama & manajemen sesi (`lib/features/shared/providers/plas_providers.dart` dan `lib/features/auth/application/session_controller.dart`) mencakup 5 tahap guard `AuthGateStatus`, sinkronisasi flag lokal `plas_class_onboarding_done_<mahasiswaId>`, serta `retryPendingSyncQueue` dan `invalidateLearningData`.
+  - Penambahan alur autentikasi & onboarding `M01` hingga `M04` (`lib/features/auth/presentation/`): `SplashScreen`, `AuthScreen` (Email+Sandi & Google Sign-In), `OnboardingIdentityScreen` (`Nama` + `NIM VARCHAR(30)` dengan penanganan inline `409 nim_conflict` dan `profile_conflict`), dan `OnboardingClassScreen` (pencocokan `Kode Kelas`, pratinjau `#F0FDF4`/`#15803D`, dan `Lewati (Pengguna Umum)`).
+  - Penambahan alur belajar & asisten Socratic `M05`, `M06`, `M07`, & `M09` (`lib/features/learn/presentation/` & `lib/features/ai/presentation/`): `LearnHomeScreen` (`ENERGY 2`, Hero Progress Banner, `PlasOfflineSyncBanner`, gerbang `DBR-15` Post-Test terkunci sampai 7/7 latihan `SUBMITTED`, 7 materi TypeScript), `MaterialDetailScreen` (SubMateri, Exercise `MC`/`TF`/`FIB`, `Attempt 1/3`..`3/3`, banner `attempt_limit_reached`, `Riwayat Attempt`), `SubMaterialReadScreen` (`PlasMarkdownView` + `PlasCodeBlock` + `TanyaAiFab`), dan `AiAssistantSheet` (`OwlBracketMascot`, 3 level Socratic, `requestId` UUID stabil saat retry `502`/`504`/offline, penanganan `already_processed`, dan varian `0/10` reset `00:00 WITA`).
+  - Penambahan komponen latihan bersama (`lib/shared/widgets/plas_accuracy_ring.dart` dan `lib/features/shared/widgets/question_answer_input.dart`) serta layar latihan `M08A/B` dan `M13` (`lib/features/exercise/presentation/`): `ExerciseSessionScreen` (`ENERGY 1` tanpa Bottom Nav, tanpa timer, tanpa feedback instan, `Petunjuk Awal` opsional gratis, `TanyaAiFab`, antrean offline idempoten, `showSubmitExerciseConfirmDialog`) dan `ExerciseReviewScreen` (`PlasAccuracyRing` `#15803D`, `Jawaban Anda`, `Pembahasan Konsep` khusus status `SUBMITTED`, nol kunci jawaban `P13`).
+  - Penambahan alur evaluasi Pre-Test & Post-Test `M10`, `M11`, & `M12` (`lib/features/test_eval/presentation/`): `TestSessionScreen` (ujian linear tanpa tombol Kembali, tanpa timer, tanpa `TanyaAiFab` `P12`, `PopScope` konfirmasi keluar sementara, banner/aksi resume `IN_PROGRESS` `P7`, antrean offline idempoten, refresh profil pasca `PRE` submit untuk `DBR-14`) dan `TestResultScreen` (`PlasAccuracyRing` `#1D4ED8`, skor, total durasi, status `is_correct` & durasi per soal, nol `explanation` dan nol kunci jawaban `P13`).
+  - Penambahan tab `Riwayat` & `Profil` `M14` dan `M15` (`lib/features/history/presentation/history_screen.dart` & `lib/features/profile/presentation/profile_screen.dart`): ringkasan evaluasi tes, filter status aktivitas (`Semua`, `Selesai`, `Berlangsung`), timestamp `Asia/Makassar` (`WITA`), manajemen kelas aktif maupun terkunci `DBR-14` (`#FFFBEB`, `#E2E8F0`/`#475569`, `Symbols.lock`), dan konfirmasi keluar akun `showLogoutConfirmDialog`.
+  - Penambahan 5 berkas widget & flow test baru pada `test/features/`: `auth_onboarding_flow_test.dart`, `learn_and_ai_flow_test.dart`, `exercise_session_review_test.dart`, `test_eval_flow_test.dart`, dan `history_profile_flow_test.dart` (termasuk stress test lebar `390px` dengan `TextScaler.linear(2.0)`).
 - **Tahap 3: Layer Data Contract-Driven & Autentikasi (2026-11-19)**
   - Penambahan DTO aman mahasiswa di `lib/data/dto/` tanpa package codegen tambahan: `student_answer.dart`, `student_profile_dto.dart`, `material_dto.dart`, `exercise_dto.dart`, `test_dto.dart`, `ai_dto.dart`, dan `progress_dto.dart` (nol field kunci jawaban `P13`, enum uppercase `IN_PROGRESS`/`SUBMITTED` tanpa `EXPIRED`, serta `AiAskResponseDto` dengan field nullable untuk `already_processed`).
   - Penambahan `sealed class StudentAnswer` (`McAnswer`, `TfAnswer`, `FibAnswer`) dengan validasi ketat payload kanonis `P6` (1 key saja: `option_id` atau `value`, maksimal 255 karakter untuk `FIB`, menolak key ekstra dengan error `422 invalid_answer`).
@@ -39,6 +47,8 @@ Format mengacu pada Keep a Changelog dengan tanggal zona lokal `Asia/Makassar` (
   - 6 berkas unit test inti (`test/core/`): `api_error_codes_test.dart`, `app_router_test.dart`, `interceptors_test.dart`, `levenshtein_test.dart`, `pending_sync_queue_test.dart`, dan `wita_clock_test.dart`.
 
 ### Changed
+- Menambahkan parameter kueri opsional `{String? submaterialId}` pada `AppRoutes.exerciseSession` (`lib/core/router/app_routes.dart`) dengan kompatibilitas penuh saat parameter dikosongkan.
+- Menghubungkan seluruh rute `M01` hingga `M15` di `appRouterProvider` (`lib/core/router/app_router.dart`) ke layar implementasi nyata serta menghapus `_StagePlaceholderScreen`.
 - Menghubungkan `accessTokenProvider` (`lib/core/network/dio_client.dart`) secara default ke `authServiceProvider.getAccessToken()`.
 - Menyempurnakan `buildPlasTheme()` (`lib/core/theme/plas_theme.dart`) dan `main.dart` dengan `SystemUiOverlayStyle` Light Mode, `ProgressIndicatorThemeData`, `DividerThemeData`, `TextSelectionThemeData`, dan `SnackBarThemeData`.
 - Mengganti `NavigationBar` sementara pada `_AppShellScaffold` (`lib/core/router/app_router.dart`) dengan `PlasBottomNav`.
@@ -48,4 +58,4 @@ Format mengacu pada Keep a Changelog dengan tanggal zona lokal `Asia/Makassar` (
 
 ### Verification
 - `flutter analyze`: lulus (`No issues found!`).
-- `flutter test`: seluruh 84 test lulus (21 unit test pada `test/core/`, 30 unit test pada `test/data/`, dan 33 widget/unit test pada `test/widgets/`).
+- `flutter test`: seluruh 134 test lulus (21 unit test pada `test/core/`, 30 unit test pada `test/data/`, 33 widget/unit test pada `test/widgets/`, dan 50 widget/flow test pada `test/features/`).
