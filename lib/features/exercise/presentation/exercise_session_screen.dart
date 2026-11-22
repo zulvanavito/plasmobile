@@ -25,10 +25,12 @@ class ExerciseSessionScreen extends ConsumerStatefulWidget {
     super.key,
     required this.exerciseId,
     this.submaterialId,
+    this.clock,
   });
 
   final String exerciseId;
   final String? submaterialId;
+  final DateTime Function()? clock;
 
   @override
   ConsumerState<ExerciseSessionScreen> createState() =>
@@ -56,16 +58,39 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
 
   String? _creationRequestId;
   String? _submitAttemptKey;
-  final Map<String, String> _submissionKeys = <String, String>{};
+  final Map<String, _PendingExerciseSubmission> _pendingSubmissions =
+      <String, _PendingExerciseSubmission>{};
   final Set<String> _answeredQuestionIds = <String>{};
   final Map<String, StudentAnswer> _recordedAnswers = <String, StudentAnswer>{};
 
-  DateTime _questionShownAt = DateTime.now();
+  late DateTime _questionShownAt;
+
+  DateTime _now() => (widget.clock ?? DateTime.now)();
 
   @override
   void initState() {
     super.initState();
+    _questionShownAt = _now();
     _loadSession();
+  }
+
+  @override
+  void didUpdateWidget(covariant ExerciseSessionScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.exerciseId != oldWidget.exerciseId) {
+      _creationRequestId = null;
+      _submitAttemptKey = null;
+      _pendingSubmissions.clear();
+      _attempt = null;
+      _questions = const <ExerciseQuestionDto>[];
+      _answeredQuestionIds.clear();
+      _recordedAnswers.clear();
+      _hasPendingSubmit = false;
+      _offlineNotice = null;
+      _submissionError = null;
+      _questionShownAt = _now();
+      _loadSession();
+    }
   }
 
   String _normalizeSyncPath(String path) {
@@ -142,7 +167,7 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
       }
 
       late final ExerciseAttemptDto activeAttempt;
-      late final List<ExerciseQuestionDto> questions;
+      late List<ExerciseQuestionDto> questions;
       final answeredIds = <String>{};
       final recorded = <String, StudentAnswer>{};
 
@@ -186,10 +211,16 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
         questions = List<ExerciseQuestionDto>.from(created.questions)
           ..sort((a, b) => a.sequence.compareTo(b.sequence));
 
-        if (resolvedTitle == null && subId != null && subId.isNotEmpty) {
+        if ((resolvedTitle == null || questions.isEmpty) &&
+            subId != null &&
+            subId.isNotEmpty) {
           try {
             final exDetail = await repo.getExercise(subId);
-            resolvedTitle = exDetail.title;
+            resolvedTitle ??= exDetail.title;
+            if (questions.isEmpty) {
+              questions = List<ExerciseQuestionDto>.from(exDetail.questions)
+                ..sort((a, b) => a.sequence.compareTo(b.sequence));
+            }
           } catch (_) {
             // Non-fatal: fallback title allows session execution to continue.
           }
@@ -207,7 +238,6 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
           final qId = item.body['question_id'];
           if (qId is String && qId.isNotEmpty) {
             answeredIds.add(qId);
-            _submissionKeys[qId] = item.idempotencyKey;
             final qType = questionTypeById[qId];
             final rawAnswer = item.body['answer'];
             if (qType != null && rawAnswer is Map) {
@@ -243,6 +273,7 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
         _attempt = activeAttempt;
         _questions = questions;
         _title = resolvedTitle ?? 'Sesi Latihan';
+        _pendingSubmissions.clear();
         _answeredQuestionIds
           ..clear()
           ..addAll(answeredIds);
@@ -254,7 +285,7 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
         _selectedAnswer = null;
         _showHint = false;
         _submissionError = null;
-        _questionShownAt = DateTime.now();
+        _questionShownAt = _now();
       });
     } on PlasApiException catch (error) {
       if (!mounted) return;
@@ -294,10 +325,21 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
     final answer = _selectedAnswer;
     if (answer == null) return;
 
-    final elapsedRaw = DateTime.now().difference(_questionShownAt).inSeconds;
-    final elapsed = elapsedRaw < 0 ? 0 : elapsedRaw;
-    final submissionKey =
-        _submissionKeys[currentQuestion.questionId] ??= _uuid.v4();
+    final qId = currentQuestion.questionId;
+    final existingDraft = _pendingSubmissions[qId];
+    final _PendingExerciseSubmission draft;
+    if (existingDraft != null && existingDraft.answer == answer) {
+      draft = existingDraft;
+    } else {
+      final elapsedRaw = _now().difference(_questionShownAt).inSeconds;
+      final elapsed = elapsedRaw < 0 ? 0 : elapsedRaw;
+      draft = _PendingExerciseSubmission(
+        key: _uuid.v4(),
+        elapsedSeconds: elapsed,
+        answer: answer,
+      );
+      _pendingSubmissions[qId] = draft;
+    }
 
     setState(() {
       _isSubmitting = true;
@@ -307,17 +349,18 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
     try {
       await ref.read(plasRepositoryProvider).submitExerciseAnswer(
             attemptId: attempt.attemptId,
-            questionId: currentQuestion.questionId,
+            questionId: qId,
             answer: answer,
-            timeSpentSeconds: elapsed,
-            submissionRequestId: submissionKey,
+            timeSpentSeconds: draft.elapsedSeconds,
+            submissionRequestId: draft.key,
           );
       if (!mounted) return;
 
       setState(() {
         _isSubmitting = false;
-        _answeredQuestionIds.add(currentQuestion.questionId);
-        _recordedAnswers[currentQuestion.questionId] = answer;
+        _pendingSubmissions.remove(qId);
+        _answeredQuestionIds.add(qId);
+        _recordedAnswers[qId] = answer;
         _submissionError = null;
       });
 
@@ -328,15 +371,15 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
       if (error.isOffline) {
         await ref.read(pendingSyncProvider.notifier).enqueue(
               PendingSyncItem(
-                idempotencyKey: submissionKey,
+                idempotencyKey: draft.key,
                 method: 'POST',
                 path: '/exercise-attempts/${attempt.attemptId}/answers',
                 body: <String, dynamic>{
-                  'question_id': currentQuestion.questionId,
+                  'question_id': qId,
                   'answer': answer.toJson(),
-                  'time_spent_seconds': elapsed,
+                  'time_spent_seconds': draft.elapsedSeconds,
                 },
-                createdAtIso: DateTime.now().toUtc().toIso8601String(),
+                createdAtIso: _now().toUtc().toIso8601String(),
                 operationLabel:
                     'Kirim jawaban soal ${currentQuestion.sequence}',
               ),
@@ -345,8 +388,9 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
 
         setState(() {
           _isSubmitting = false;
-          _answeredQuestionIds.add(currentQuestion.questionId);
-          _recordedAnswers[currentQuestion.questionId] = answer;
+          _pendingSubmissions.remove(qId);
+          _answeredQuestionIds.add(qId);
+          _recordedAnswers[qId] = answer;
           _submissionError = null;
           _offlineNotice =
               'Koneksi terputus. Jawaban soal ${currentQuestion.sequence} disimpan sementara dan siap dikirim ulang.';
@@ -359,8 +403,9 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
       if (error.code == ApiErrorCodes.alreadyAnswered) {
         setState(() {
           _isSubmitting = false;
-          _answeredQuestionIds.add(currentQuestion.questionId);
-          _recordedAnswers[currentQuestion.questionId] = answer;
+          _pendingSubmissions.remove(qId);
+          _answeredQuestionIds.add(qId);
+          _recordedAnswers[qId] = answer;
           _submissionError = null;
         });
         await _advanceOrConfirmSubmit();
@@ -371,6 +416,7 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
           error.code == ApiErrorCodes.attemptSubmitted) {
         setState(() {
           _isSubmitting = false;
+          _pendingSubmissions.remove(qId);
         });
         invalidateLearningData(ref);
         context.pushReplacement(AppRoutes.exerciseReview(attempt.attemptId));
@@ -379,6 +425,9 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
 
       setState(() {
         _isSubmitting = false;
+        if (!error.isRetryable && error.statusCode != 500) {
+          _pendingSubmissions.remove(qId);
+        }
         _submissionError = error.message;
       });
     } catch (error) {
@@ -402,7 +451,7 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
         _selectedAnswer = null;
         _showHint = false;
         _submissionError = null;
-        _questionShownAt = DateTime.now();
+        _questionShownAt = _now();
       });
       return;
     }
@@ -499,7 +548,7 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
             method: 'POST',
             path: '/exercise-attempts/$attemptId/submit',
             body: const <String, dynamic>{},
-            createdAtIso: DateTime.now().toUtc().toIso8601String(),
+            createdAtIso: _now().toUtc().toIso8601String(),
             operationLabel: 'Kumpulkan latihan',
           ),
         );
@@ -881,6 +930,9 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
           enabled: !_isSubmitting && !isCurrentAnswered,
           onChanged: (next) {
             setState(() {
+              if (_selectedAnswer != next) {
+                _pendingSubmissions.remove(currentQuestion.questionId);
+              }
               _selectedAnswer = next;
               _submissionError = null;
             });
@@ -902,4 +954,16 @@ class _ExerciseSessionScreenState extends ConsumerState<ExerciseSessionScreen> {
       ],
     );
   }
+}
+
+class _PendingExerciseSubmission {
+  const _PendingExerciseSubmission({
+    required this.key,
+    required this.elapsedSeconds,
+    required this.answer,
+  });
+
+  final String key;
+  final int elapsedSeconds;
+  final StudentAnswer answer;
 }

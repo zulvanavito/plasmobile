@@ -362,8 +362,15 @@ class SessionController extends Notifier<SessionState> {
   }
 
   Future<void> refreshProfile() async {
+    final revision = _bootstrapRevision;
+    final userId = _authService.currentUser?.userId;
+    if (userId == null) return;
     final profile = await _repository.getMe();
-    if (_disposed) return;
+    if (_disposed ||
+        revision != _bootstrapRevision ||
+        _authService.currentUser?.userId != userId) {
+      return;
+    }
     state = state.copyWith(profile: profile);
   }
 

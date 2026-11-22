@@ -66,3 +66,15 @@
 - [ ] Uji end-to-end dengan `--dart-define=USE_MOCK=false` terhadap REST API Next.js dan Supabase Auth live
 - [ ] Verifikasi offline retry idempoten, skenario `DBR-14`/`DBR-15`, kuota `Asia/Makassar`, dan `minSdk 26` build APK
 - [ ] Audit final `antislop` Delivery Gate & kesiapan uji Black Box / Usability
+
+---
+
+## Catatan Bug & Temuan Review
+- [x] **BUG-001 (`P2` Idempotency Conflict saat Retry Jawaban Latihan):** Pada `lib/features/exercise/presentation/exercise_session_screen.dart`, `timeSpentSeconds` (`elapsed`) sebelumnya dihitung ulang saat tombol kirim ditekan sementara UUID `Idempotency-Key` dipertahankan, serta kunci lama tetap terpakai bila pengguna mengganti jawaban sebelum retry.
+  - **Perbaikan:** Membekukan draft `(key, elapsedSeconds, answer)` per `questionId` dalam `_PendingExerciseSubmission` untuk retry jawaban yang sama, mereset draft pada `QuestionAnswerInput.onChanged` bila jawaban diubah maupun pada error klien non-retryable, serta menambahkan `didUpdateWidget` saat `exerciseId` berubah dan fallback `questions` dari `getExercise(subId)`.
+- [x] **BUG-002 (`P2` Idempotency Conflict saat Mengubah Jawaban Tes setelah Error Inline):** Pada `lib/features/test_eval/presentation/test_session_screen.dart`, `_answerKeys[sequence]` sebelumnya tidak di-reset bila pengguna mengubah pilihan jawaban setelah gagal kirim non-retryable (mis. `500`/`422`), dan cabang `409 already_answered` tidak mengisi `_pendingNextSequence` sebelum memanggil `startTestQuestion(sequence + 1)`.
+  - **Perbaikan:** Mengikat kunci idempotensi per `sequence` dengan payload jawaban pada `_pendingAnswers`, meresetnya saat `QuestionAnswerInput.onChanged` atau error klien non-retryable, serta menetapkan `_pendingNextSequence = sequence + 1` pada handler `already_answered`.
+- [x] **BUG-003 (Race Condition `SessionController.refreshProfile` vs `signOut`):** Pada `lib/features/auth/application/session_controller.dart`, `refreshProfile()` sebelumnya dapat menimpa `state.profile` dengan respons `getMe()` yang terlambat setelah pengguna keluar akun.
+  - **Perbaikan:** Menambahkan guard `_bootstrapRevision` dan `userId` aktif sebelum dan sesudah `await _repository.getMe()`.
+- [x] **BUG-004 (`ref.watch` di dalam Closure `accessTokenProvider`):** Pada `lib/core/network/dio_client.dart`, `accessTokenProvider` memanggil `ref.watch(authServiceProvider)` di dalam fungsi callback async.
+  - **Perbaikan:** Memindahkan pembacaan `ref.watch(authServiceProvider)` ke body provider dan mengembalikan tear-off `authService.getAccessToken`.

@@ -5,6 +5,14 @@ Format mengacu pada Keep a Changelog dengan tanggal zona lokal `Asia/Makassar` (
 
 ## [Unreleased]
 
+### Fixed
+- **Audit Keseluruhan & Perbaikan Bug Pra-Tahap 5 (2026-11-22)**
+  - `BUG-001`: Membekukan `(key, elapsedSeconds, answer)` per `questionId` (`_PendingExerciseSubmission`) di `lib/features/exercise/presentation/exercise_session_screen.dart` agar retry jawaban latihan yang identik tidak memicu `409 idempotency_conflict` akibat perubahan `time_spent_seconds`, mereset kunci bila mahasiswa mengubah jawaban sebelum berhasil atau saat error klien non-retryable, menambahkan parameter `clock` opsional untuk pengujian deterministik, menambahkan `didUpdateWidget` saat `exerciseId` berganti, serta fallback pengambilan `questions` dari `getExercise(subId)` bila respons `createExerciseAttempt` tidak menyertakannya.
+  - `BUG-002`: Mengikat kunci idempotensi per `sequence` dengan payload jawaban (`_pendingAnswers`) di `lib/features/test_eval/presentation/test_session_screen.dart` agar perubahan jawaban pasca error `500`/`422` selalu mencetak `Idempotency-Key` baru, mereset kunci pada error klien non-retryable, serta mengisi `_pendingNextSequence = sequence + 1` pada cabang `409 already_answered` agar retry `startTestQuestion` tidak mengirim ulang jawaban soal sebelumnya.
+  - `BUG-003`: Menambahkan guard `_bootstrapRevision` dan `userId` pada `SessionController.refreshProfile()` (`lib/features/auth/application/session_controller.dart`) guna mencegah respons `getMe()` yang terlambat memulihkan `profile` setelah `signOut()`.
+  - `BUG-004`: Memperbaiki `accessTokenProvider` (`lib/core/network/dio_client.dart`) agar memanggil `ref.watch(authServiceProvider)` saat inisialisasi provider, bukan di dalam callback `AccessTokenProvider`.
+  - Menambahkan 3 regression test baru di `test/features/exercise_session_review_test.dart`, `test/features/test_eval_flow_test.dart`, dan `test/features/auth_onboarding_flow_test.dart`.
+
 ### Added
 - **Tahap 4: Implementasi Layar `M01` sampai `M15` (2026-11-21)**
   - Penambahan penyedia data bersama & manajemen sesi (`lib/features/shared/providers/plas_providers.dart` dan `lib/features/auth/application/session_controller.dart`) mencakup 5 tahap guard `AuthGateStatus`, sinkronisasi flag lokal `plas_class_onboarding_done_<mahasiswaId>`, serta `retryPendingSyncQueue` dan `invalidateLearningData`.
@@ -58,4 +66,4 @@ Format mengacu pada Keep a Changelog dengan tanggal zona lokal `Asia/Makassar` (
 
 ### Verification
 - `flutter analyze`: lulus (`No issues found!`).
-- `flutter test`: seluruh 134 test lulus (21 unit test pada `test/core/`, 30 unit test pada `test/data/`, 33 widget/unit test pada `test/widgets/`, dan 50 widget/flow test pada `test/features/`).
+- `flutter test`: seluruh 137 test lulus (21 unit test pada `test/core/`, 30 unit test pada `test/data/`, 33 widget/unit test pada `test/widgets/`, dan 53 widget/flow test pada `test/features/`).

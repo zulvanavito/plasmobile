@@ -8,9 +8,10 @@ import 'package:plasmobile/data/services/auth_service.dart';
 
 const Duration kAiRequestTimeout = Duration(seconds: 35);
 
-final accessTokenProvider = Provider<AccessTokenProvider>(
-  (ref) => () => ref.watch(authServiceProvider).getAccessToken(),
-);
+final accessTokenProvider = Provider<AccessTokenProvider>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  return authService.getAccessToken;
+});
 
 Dio createPlasDio({
   required String baseUrl,
