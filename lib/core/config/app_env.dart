@@ -26,4 +26,20 @@ abstract final class AppEnv {
 
   static bool get hasSupabaseConfig =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
+
+  static List<String> missingLiveConfigKeys({
+    String? apiBaseUrlOverride,
+    String? supabaseUrlOverride,
+    String? supabaseAnonKeyOverride,
+  }) {
+    final effectiveApi = (apiBaseUrlOverride ?? apiBaseUrl).trim();
+    final effectiveSupabaseUrl = (supabaseUrlOverride ?? supabaseUrl).trim();
+    final effectiveAnonKey =
+        (supabaseAnonKeyOverride ?? supabaseAnonKey).trim();
+    final missing = <String>[];
+    if (effectiveApi.isEmpty) missing.add('API_BASE_URL');
+    if (effectiveSupabaseUrl.isEmpty) missing.add('SUPABASE_URL');
+    if (effectiveAnonKey.isEmpty) missing.add('SUPABASE_ANON_KEY');
+    return List<String>.unmodifiable(missing);
+  }
 }

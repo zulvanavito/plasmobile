@@ -74,45 +74,45 @@ lib/main.dart (SharedPreferences + Supabase.initialize jika USE_MOCK=false)
 ```text
 plasmobile/
 ├── android/
-│   ├── gradle.properties                     # Menyetel kotlin.incremental=false untuk build Windows
+│   ├── gradle.properties                         # Menyetel kotlin.incremental=false untuk build Windows
 │   └── app/
-│       ├── build.gradle.kts                  # Namespace, minSdk 26, Java/Kotlin 17
-│       └── src/main/AndroidManifest.xml      # Izin INTERNET & konfigurasi MainActivity
+│       ├── build.gradle.kts                      # Namespace, minSdk 26, Java/Kotlin 17
+│       └── src/
+│           ├── debug/res/xml/
+│           │   └── network_security_config.xml   # Mengizinkan HTTP lokal saat debug (10.0.2.2)
+│           └── main/
+│               ├── AndroidManifest.xml           # Label PLAS-TypeScript, INTERNET, networkSecurityConfig
+│               └── res/
+│                   ├── drawable/
+│                   │   ├── ic_launcher_background.xml
+│                   │   ├── ic_launcher_foreground.xml
+│                   │   ├── ic_plas_splash_logo.xml
+│                   │   └── launch_background.xml # Splash Light Mode + logo PLAS-TypeScript
+│                   ├── drawable-v21/launch_background.xml
+│                   ├── mipmap-anydpi-v26/ic_launcher.xml
+│                   ├── values/colors.xml
+│                   ├── values/styles.xml         # LaunchTheme & NormalTheme Light Mode
+│                   ├── values-night/styles.xml   # Paksa Light Mode meski OS memakai Dark Mode
+│                   └── xml/network_security_config.xml # Ketat HTTPS (cleartext=false) untuk rilis
 ├── assets/
-│   ├── fonts/                                # Target font lokal (saat ini berisi .gitkeep)
-│   └── svg/                                  # Target aset SVG (saat ini berisi .gitkeep)
+│   ├── fonts/                                    # Plus Jakarta Sans & JetBrains Mono statis
+│   └── svg/                                      # Aset vektor owl_bracket, google_logo, app_logo_ts
 ├── lib/
-│   ├── app.dart                              # Root widget PlasApp (MaterialApp.router)
-│   ├── main.dart                             # Entry point & override sharedPreferencesProvider
-│   └── core/
-│       ├── config/app_env.dart               # Pembacaan --dart-define
-│       ├── constants/api_error_codes.dart    # 29 kode error API & pesan bahasa Indonesia
-│       ├── errors/plas_exception.dart        # PlasApiException & flag isRetryable
-│       ├── network/
-│       │   ├── auth_interceptor.dart
-│       │   ├── dio_client.dart
-│       │   ├── error_interceptor.dart
-│       │   └── idempotency_interceptor.dart
-│       ├── router/
-│       │   ├── app_router.dart
-│       │   └── app_routes.dart
-│       ├── sync/pending_sync_queue.dart
-│       ├── theme/
-│       │   ├── plas_theme.dart
-│       │   └── plas_tokens.dart
-│       └── utils/
-│           ├── levenshtein.dart
-│           └── wita_clock.dart
-├── test/core/                                # 6 berkas unit test modul inti
-│   ├── api_error_codes_test.dart
-│   ├── app_router_test.dart
-│   ├── interceptors_test.dart
-│   ├── levenshtein_test.dart
-│   ├── pending_sync_queue_test.dart
-│   └── wita_clock_test.dart
+│   ├── app.dart                                  # Root widget PlasApp (MaterialApp.router)
+│   ├── main.dart                                 # Entry point, validasi AppEnv, & Supabase.initialize
+│   ├── core/                                     # Config, error codes, Dio, router, sync, tema, utils
+│   ├── data/                                     # DTO kontrak API, AuthService, Mock & Api repository
+│   ├── shared/widgets/                           # Komponen UI desain sistem PLAS
+│   └── features/                                 # Layar M01-M15 (auth, learn, ai, exercise, test_eval, history, profile)
+├── test/
+│   ├── core/                                     # 7 berkas unit test modul inti (24 test)
+│   ├── data/                                     # 4 berkas unit test data layer & kontrak API (30 test)
+│   ├── widgets/                                  # 5 berkas widget test komponen inti (33 test)
+│   └── features/                                 # 5 berkas integration/flow test layar M01-M15 (53 test)
 ├── analysis_options.yaml
-├── BACKLOG.md                                # Rencana kerja 5 tahap & keputusan teknis terkunci
-├── CHANGELOG.md                              # Riwayat perubahan proyek
+├── BACKLOG.md                                    # Rencana kerja 5 tahap & catatan perbaikan bug
+├── CHANGELOG.md                                  # Riwayat perubahan proyek
+├── env.example.json                              # Template konfigurasi --dart-define-from-file
 └── pubspec.yaml
 ```
 
@@ -120,15 +120,30 @@ plasmobile/
 
 ## Konfigurasi Environment
 
-Konfigurasi runtime dikelola lewat `--dart-define` pada [`lib/core/config/app_env.dart`](./lib/core/config/app_env.dart).
+Konfigurasi runtime dikelola lewat `--dart-define` atau `--dart-define-from-file` pada [`lib/core/config/app_env.dart`](./lib/core/config/app_env.dart). Tersedia berkas template [`env.example.json`](./env.example.json) sebagai acuan.
 
 | Variabel | Default | Fungsi |
 |---|---|---|
-| `USE_MOCK` | `true` | Mengaktifkan mode mock lokal; jika `false` dan konfigurasi Supabase terisi, aplikasi memanggil `Supabase.initialize` saat startup |
+| `USE_MOCK` | `true` | Mengaktifkan mode mock lokal; jika `false`, startup memvalidasi key wajib lewat `AppEnv.missingLiveConfigKeys()` sebelum memanggil `Supabase.initialize` |
 | `API_BASE_URL` | `http://10.0.2.2:3000/api` | Base URL Next.js REST API (`10.0.2.2` mengarah ke host lokal dari emulator Android) |
-| `SUPABASE_URL` | `""` | URL proyek Supabase untuk layanan autentikasi |
-| `SUPABASE_ANON_KEY` | `""` | Anon key publik Supabase Auth |
+| `SUPABASE_URL` | `""` | URL proyek Supabase untuk layanan autentikasi (wajib saat `USE_MOCK=false`) |
+| `SUPABASE_ANON_KEY` | `""` | Anon key publik Supabase Auth (wajib saat `USE_MOCK=false`) |
 | `GOOGLE_WEB_CLIENT_ID` | `""` | Client ID OAuth Web untuk autentikasi Google Sign-In |
+
+### Catatan Keamanan Jaringan & Google Sign-In Android
+
+- **Debug vs Release Network Security Config:** Build `debug` menggunakan [`android/app/src/debug/res/xml/network_security_config.xml`](./android/app/src/debug/res/xml/network_security_config.xml) (`cleartextTrafficPermitted="true"`) agar emulator dan perangkat uji bisa mengakses server Next.js lokal via HTTP (`http://10.0.2.2:3000/api` atau IP LAN). Build `release` dan `profile` memakai [`android/app/src/main/res/xml/network_security_config.xml`](./android/app/src/main/res/xml/network_security_config.xml) (`cleartextTrafficPermitted="false"`) yang mewajibkan HTTPS.
+- **Konfigurasi Environment Live Lokal:** Salin `env.example.json` menjadi `env.live.json` (sudah di-ignore pada [`.gitignore`](./.gitignore)) lalu isi kredensial proyek Anda:
+
+```bash
+cp env.example.json env.live.json
+```
+
+- **SHA-1 Keystore untuk Google Sign-In:** Daftarkan SHA-1 keystore debug/rilis Android ke proyek Google Cloud OAuth & Supabase Auth dengan mengecek fingerprint melalui Gradle:
+
+```bash
+cd android && ./gradlew signingReport
+```
 
 ---
 
@@ -153,7 +168,13 @@ Mode default (`USE_MOCK=true`):
 flutter run
 ```
 
-Mode terhubung ke backend Next.js dan Supabase Auth (sesuaikan nilai placeholder dengan konfigurasi lingkungan Anda):
+Mode terhubung ke backend Next.js dan Supabase Auth menggunakan `env.live.json`:
+
+```bash
+flutter run --dart-define-from-file=env.live.json
+```
+
+Atau secara eksplisit dengan flag `--dart-define`:
 
 ```bash
 flutter run --dart-define=USE_MOCK=false --dart-define=API_BASE_URL=http://10.0.2.2:3000/api --dart-define=SUPABASE_URL=<supabase_url> --dart-define=SUPABASE_ANON_KEY=<supabase_anon_key> --dart-define=GOOGLE_WEB_CLIENT_ID=<google_web_client_id>
@@ -164,7 +185,8 @@ flutter run --dart-define=USE_MOCK=false --dart-define=API_BASE_URL=http://10.0.
 ```bash
 flutter analyze
 flutter test
-flutter build apk
+flutter build apk --debug
+flutter build apk --release --dart-define-from-file=env.live.json
 ```
 
 Konfigurasi `release` pada [`android/app/build.gradle.kts`](./android/app/build.gradle.kts) saat ini masih memakai `signingConfigs.getByName("debug")` sampai konfigurasi keystore rilis ditambahkan.
@@ -177,10 +199,10 @@ Perkembangan proyek mengacu pada lima tahap di [`BACKLOG.md`](./BACKLOG.md):
 
 | Tahap | Cakupan | Status |
 |---|---|---|
-| Tahap 1 | Bootstrap proyek, arsitektur `lib/core/`, tema, router, dan 6 berkas unit test | Selesai |
-| Tahap 2 | Bundling font lokal, aset SVG, dan widget inti Design System (`DESIGN.md v1.1`) | Belum dikerjakan |
-| Tahap 3 | DTO kontrak API `P6`, `AuthService`, `MockPlasRepository`, dan `ApiPlasRepository` | Belum dikerjakan |
-| Tahap 4 | Implementasi layar `M01` sampai `M15` (saat ini rute menampilkan `_StagePlaceholderScreen`) | Belum dikerjakan |
-| Tahap 5 | Uji end-to-end dengan `USE_MOCK=false`, build APK `minSdk 26`, dan QA akhir | Belum dikerjakan |
+| Tahap 1 | Bootstrap proyek, arsitektur `lib/core/`, tema, router, dan unit test modul inti (24 test) | Selesai |
+| Tahap 2 | Bundling font lokal, aset SVG, dan widget inti Design System (`DESIGN.md v1.1`) (33 test) | Selesai |
+| Tahap 3 | DTO kontrak API `P6`, `AuthService`, `MockPlasRepository`, dan `ApiPlasRepository` (30 test) | Selesai |
+| Tahap 4 | Implementasi layar `M01` sampai `M15` + audit bugfix `BUG-001` hingga `BUG-004` (53 test) | Selesai |
+| Tahap 5 | Konfigurasi Android & env live selesai; lanjut uji `USE_MOCK=false`, `DBR-14`/`DBR-15`, dan QA akhir | Sedang berjalan |
 
 Untuk daftar tugas per tahap dan keputusan teknis terkunci, lihat [`BACKLOG.md`](./BACKLOG.md). Catatan rinci setiap perubahan dan hasil verifikasi berkala terdokumentasi di [`CHANGELOG.md`](./CHANGELOG.md).

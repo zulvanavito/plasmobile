@@ -21,7 +21,15 @@ Future<void> main() async {
   );
   final prefs = await SharedPreferences.getInstance();
 
-  if (!AppEnv.useMock && AppEnv.hasSupabaseConfig) {
+  if (!AppEnv.useMock) {
+    final missingKeys = AppEnv.missingLiveConfigKeys();
+    if (missingKeys.isNotEmpty) {
+      throw StateError(
+        'Konfigurasi live belum lengkap saat USE_MOCK=false. '
+        'Tambahkan --dart-define atau --dart-define-from-file=env.live.json untuk key: '
+        '${missingKeys.join(', ')}.',
+      );
+    }
     await Supabase.initialize(
       url: AppEnv.supabaseUrl,
       anonKey: AppEnv.supabaseAnonKey,

@@ -49,3 +49,7 @@ app.*.map.json
 
 # SDD scratch workspace
 .superpowers/
+
+# Local live environment files (never commit secrets)
+env.live.json
+env.*.local.json
