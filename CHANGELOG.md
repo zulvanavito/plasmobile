@@ -5,6 +5,14 @@ Format mengacu pada Keep a Changelog dengan tanggal zona lokal `Asia/Makassar` (
 
 ## [Unreleased]
 
+### Added
+- **Tahap 5 (Bagian 1): Persiapan Konfigurasi Android & Environment Live (2026-11-22)**
+  - Memperbarui [`AndroidManifest.xml`](android/app/src/main/AndroidManifest.xml) dengan `android:label="PLAS-TypeScript"` dan `android:networkSecurityConfig="@xml/network_security_config"`.
+  - Menambahkan `network_security_config.xml` terpisah untuk rilis (`cleartextTrafficPermitted="false"` di `android/app/src/main/res/xml/`) dan debug (`cleartextTrafficPermitted="true"` di `android/app/src/debug/res/xml/` untuk akses server Next.js lokal seperti `http://10.0.2.2:3000/api`).
+  - Menetapkan tema `Light Mode` konsisten (`@android:style/Theme.Light.NoTitleBar`, `#F8FAFC` pada `colors.xml`) di `values/styles.xml` dan `values-night/styles.xml`, serta splash `launch_background.xml` + `drawable-v21/launch_background.xml` dengan vector `ic_plas_splash_logo.xml`.
+  - Menerjemahkan logo aplikasi (`assets/svg/app_logo_ts.svg`) ke adaptive launcher icon vektor native API 26+ (`ic_launcher_background.xml`, `ic_launcher_foreground.xml`, `mipmap-anydpi-v26/ic_launcher.xml`) tanpa tambahan package pihak ketiga.
+  - Menambahkan template `env.example.json` untuk `--dart-define-from-file`, meng-ignore `env.live.json` & `env.*.local.json` di `.gitignore`, menambahkan helper `AppEnv.missingLiveConfigKeys()` di `lib/core/config/app_env.dart` dengan pemeriksaan fail-fast di `lib/main.dart` ketika `USE_MOCK=false`, unit test `test/core/app_env_test.dart`, serta pembaruan dokumentasi pada `README.md`.
+
 ### Fixed
 - **Audit Keseluruhan & Perbaikan Bug Pra-Tahap 5 (2026-11-22)**
   - `BUG-001`: Membekukan `(key, elapsedSeconds, answer)` per `questionId` (`_PendingExerciseSubmission`) di `lib/features/exercise/presentation/exercise_session_screen.dart` agar retry jawaban latihan yang identik tidak memicu `409 idempotency_conflict` akibat perubahan `time_spent_seconds`, mereset kunci bila mahasiswa mengubah jawaban sebelum berhasil atau saat error klien non-retryable, menambahkan parameter `clock` opsional untuk pengujian deterministik, menambahkan `didUpdateWidget` saat `exerciseId` berganti, serta fallback pengambilan `questions` dari `getExercise(subId)` bila respons `createExerciseAttempt` tidak menyertakannya.
@@ -66,4 +74,6 @@ Format mengacu pada Keep a Changelog dengan tanggal zona lokal `Asia/Makassar` (
 
 ### Verification
 - `flutter analyze`: lulus (`No issues found!`).
-- `flutter test`: seluruh 137 test lulus (21 unit test pada `test/core/`, 30 unit test pada `test/data/`, 33 widget/unit test pada `test/widgets/`, dan 53 widget/flow test pada `test/features/`).
+- `flutter test`: seluruh 140 test lulus (24 unit test pada `test/core/`, 30 unit test pada `test/data/`, 33 widget/unit test pada `test/widgets/`, dan 53 widget/flow test pada `test/features/`).
+- `flutter build apk --debug`: lulus (`build\app\outputs\flutter-apk\app-debug.apk`).
+- `flutter build apk --release`: lulus (`build\app\outputs\flutter-apk\app-release.apk`, 52.2MB, `minSdk = 26`).

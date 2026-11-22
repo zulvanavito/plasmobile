@@ -63,8 +63,9 @@
 - [x] `M14` & `M15` - Tab `Riwayat` dan Tab `Profil` (status kelas, kunci kelas `DBR-14` pasca Pre-Test `SUBMITTED`, Logout `ConfirmDialog`)
 
 ## Tahap 5: Integrasi Backend Next.js & QA Akhir
+- [x] Persiapan konfigurasi Android & environment live (label aplikasi `PLAS-TypeScript`, `network_security_config` debug HTTP vs release HTTPS, adaptive launcher icon & splash vector Light Mode `#F8FAFC`, template `env.example.json` + validasi fail-fast `AppEnv.missingLiveConfigKeys()`, serta verifikasi build APK debug & release `minSdk 26`)
 - [ ] Uji end-to-end dengan `--dart-define=USE_MOCK=false` terhadap REST API Next.js dan Supabase Auth live
-- [ ] Verifikasi offline retry idempoten, skenario `DBR-14`/`DBR-15`, kuota `Asia/Makassar`, dan `minSdk 26` build APK
+- [ ] Verifikasi offline retry idempoten, skenario `DBR-14`/`DBR-15`, kuota `Asia/Makassar`, dan `minSdk 26` build APK live
 - [ ] Audit final `antislop` Delivery Gate & kesiapan uji Black Box / Usability
 
 ---
