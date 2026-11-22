@@ -7,6 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:plasmobile/app.dart';
 import 'package:plasmobile/core/constants/api_error_codes.dart';
+import 'package:plasmobile/core/errors/plas_exception.dart';
 import 'package:plasmobile/core/router/app_router.dart';
 import 'package:plasmobile/core/router/app_routes.dart';
 import 'package:plasmobile/core/sync/pending_sync_queue.dart';
@@ -151,6 +152,9 @@ class _SpyPlasRepository extends MockPlasRepository {
   int getMeCallCount = 0;
 
   bool simulateEmptyPreTest = false;
+  bool commitBeforeNextSubmitAnswerError = false;
+  PlasApiException? nextSubmitAnswerError;
+  PlasApiException? nextStartQuestionError;
 
   @override
   Future<StudentProfileDto> getMe() async {
@@ -197,6 +201,11 @@ class _SpyPlasRepository extends MockPlasRepository {
     required int sequence,
     String? idempotencyKey,
   }) async {
+    if (nextStartQuestionError != null) {
+      final err = nextStartQuestionError!;
+      nextStartQuestionError = null;
+      throw err;
+    }
     final question = await super.startTestQuestion(
       attemptId: attemptId,
       sequence: sequence,
@@ -228,6 +237,21 @@ class _SpyPlasRepository extends MockPlasRepository {
         submissionRequestId: submissionRequestId,
       ),
     );
+    if (nextSubmitAnswerError != null) {
+      final err = nextSubmitAnswerError!;
+      final shouldCommit = commitBeforeNextSubmitAnswerError;
+      nextSubmitAnswerError = null;
+      commitBeforeNextSubmitAnswerError = false;
+      if (shouldCommit) {
+        await super.submitTestAnswer(
+          attemptId: attemptId,
+          sequence: sequence,
+          answer: answer,
+          submissionRequestId: submissionRequestId,
+        );
+      }
+      throw err;
+    }
     return super.submitTestAnswer(
       attemptId: attemptId,
       sequence: sequence,
@@ -1020,6 +1044,112 @@ void main() {
           findsNothing,
         );
         _assertNoP13LeaksInTree(tester);
+      },
+    );
+
+    testWidgets(
+      'BUG-002 & BUG-006: Changing answer after 500 error mints new key, and 409 already_answered sets pendingNextSequence across startTestQuestion failure',
+      (tester) async {
+        final clock = _FakeClock(DateTime.utc(2026, 11, 20, 13, 0));
+        final prefs = await SharedPreferences.getInstance();
+        final authService = _TestAuthService(initialUser: _defaultUser());
+        addTearDown(authService.dispose);
+        final repo = _SpyPlasRepository(
+          clock: clock.call,
+          initialProfile: _defaultProfile(),
+        );
+
+        await tester.pumpWidget(
+          _buildApp(prefs: prefs, authService: authService, repository: repo),
+        );
+        await tester.pumpAndSettle();
+
+        await _pushRoute(tester, AppRoutes.testSession('test-pre-01'));
+        expect(find.text('Soal 1 dari 5'), findsOneWidget);
+
+        // Q1: fail with 500 -> change option -> must mint fresh submissionRequestId.
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('question_mc_option_pre-q1-opt-2')),
+        );
+        repo.commitBeforeNextSubmitAnswerError = false;
+        repo.nextSubmitAnswerError = PlasApiException.fromApiCode(
+          ApiErrorCodes.serverError,
+          statusCode: 500,
+        );
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('test_submit_cta')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('test_submission_error_view')),
+          findsOneWidget,
+        );
+        expect(repo.recordedAnswerCalls, hasLength(1));
+        final q1FirstKey = repo.recordedAnswerCalls.first.submissionRequestId;
+
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('question_mc_option_pre-q1-opt-1')),
+        );
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('test_submit_cta')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Soal 2 dari 5'), findsOneWidget);
+        expect(repo.recordedAnswerCalls, hasLength(2));
+        expect(repo.recordedAnswerCalls[1].submissionRequestId, isNot(q1FirstKey));
+        expect(
+          repo.recordedAnswerCalls[1].answer,
+          const McAnswer('pre-q1-opt-1'),
+        );
+
+        // Q2: simulate 409 already_answered followed by transient 500 on startTestQuestion(3).
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('question_mc_option_pre-q2-opt-2')),
+        );
+        repo.commitBeforeNextSubmitAnswerError = true;
+        repo.nextSubmitAnswerError = PlasApiException.fromApiCode(
+          ApiErrorCodes.alreadyAnswered,
+          statusCode: 409,
+        );
+        repo.nextStartQuestionError = PlasApiException.fromApiCode(
+          ApiErrorCodes.serverError,
+          statusCode: 500,
+        );
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('test_submit_cta')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('test_submission_error_view')),
+          findsOneWidget,
+        );
+        expect(find.text('Soal 2 dari 5'), findsOneWidget);
+        expect(
+          repo.recordedAnswerCalls.where((c) => c.sequence == 2),
+          hasLength(1),
+        );
+
+        // Retrying CTA must advance directly to Q3 without re-calling submitTestAnswer(2).
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('test_submit_cta')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Soal 3 dari 5'), findsOneWidget);
+        expect(
+          repo.recordedAnswerCalls.where((c) => c.sequence == 2),
+          hasLength(1),
+        );
       },
     );
 

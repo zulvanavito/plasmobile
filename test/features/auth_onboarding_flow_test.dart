@@ -166,6 +166,7 @@ class _TestPlasRepository extends MockPlasRepository {
   _TestPlasRepository({super.initialProfile});
 
   PlasApiException? nextGetMeError;
+  Completer<StudentProfileDto>? nextGetMeCompleter;
   PlasApiException? nextCreateProfileError;
   PlasApiException? nextClassesError;
   PlasApiException? nextUpdateClassError;
@@ -174,6 +175,11 @@ class _TestPlasRepository extends MockPlasRepository {
 
   @override
   Future<StudentProfileDto> getMe() async {
+    if (nextGetMeCompleter != null) {
+      final completer = nextGetMeCompleter!;
+      nextGetMeCompleter = null;
+      return completer.future;
+    }
     if (nextGetMeError != null) {
       final error = nextGetMeError!;
       nextGetMeError = null;
@@ -1083,6 +1089,74 @@ void main() {
         expect(
           container.read(pendingSyncProvider).single.idempotencyKey,
           'keep-me-on-logout',
+        );
+      },
+    );
+
+    test(
+      'BUG-003: refreshProfile does not restore profile after concurrent signOut',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        final authService = _TestAuthService(
+          initialUser: const AuthSessionUser(
+            userId: 'u1',
+            email: 'andi@plas.ac.id',
+            accessToken: 'jwt',
+          ),
+        );
+        addTearDown(authService.dispose);
+        final repository = _TestPlasRepository(
+          initialProfile: StudentProfileDto(
+            mahasiswaId: 'mhs-01',
+            nama: 'Andi Fajar',
+            nim: '2415091001',
+            kelas: MockSeedData.classes.first,
+            preTestSubmitted: false,
+            remainingAiQuota: 10,
+          ),
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            authServiceProvider.overrideWithValue(authService),
+            plasRepositoryProvider.overrideWithValue(repository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(sessionControllerProvider.notifier).bootstrap();
+        expect(container.read(sessionControllerProvider).profile, isNotNull);
+        expect(
+          container.read(authGateStatusProvider),
+          AuthGateStatus.authenticated,
+        );
+
+        final getMeCompleter = Completer<StudentProfileDto>();
+        repository.nextGetMeCompleter = getMeCompleter;
+
+        final refreshFuture = container
+            .read(sessionControllerProvider.notifier)
+            .refreshProfile();
+        await container.read(sessionControllerProvider.notifier).signOut();
+
+        getMeCompleter.complete(
+          StudentProfileDto(
+            mahasiswaId: 'mhs-01',
+            nama: 'Andi Fajar',
+            nim: '2415091001',
+            kelas: MockSeedData.classes.first,
+            preTestSubmitted: true,
+            remainingAiQuota: 10,
+          ),
+        );
+        await refreshFuture;
+
+        expect(container.read(sessionControllerProvider).authUser, isNull);
+        expect(container.read(sessionControllerProvider).profile, isNull);
+        expect(
+          container.read(authGateStatusProvider),
+          AuthGateStatus.unauthenticated,
         );
       },
     );

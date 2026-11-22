@@ -7,6 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:plasmobile/app.dart';
 import 'package:plasmobile/core/constants/api_error_codes.dart';
+import 'package:plasmobile/core/errors/plas_exception.dart';
 import 'package:plasmobile/core/router/app_router.dart';
 import 'package:plasmobile/core/router/app_routes.dart';
 import 'package:plasmobile/core/sync/pending_sync_queue.dart';
@@ -84,17 +85,31 @@ class _TestAuthService implements AuthService {
   }
 }
 
+class _FakeClock {
+  _FakeClock(this.now);
+
+  DateTime now;
+
+  DateTime call() => now;
+
+  void advance(Duration delta) {
+    now = now.add(delta);
+  }
+}
+
 class _RecordedAnswerSubmission {
   const _RecordedAnswerSubmission({
     required this.attemptId,
     required this.questionId,
     required this.answer,
+    required this.timeSpentSeconds,
     required this.submissionRequestId,
   });
 
   final String attemptId;
   final String questionId;
   final StudentAnswer answer;
+  final int timeSpentSeconds;
   final String submissionRequestId;
 }
 
@@ -128,6 +143,8 @@ class _SpyPlasRepository extends MockPlasRepository {
       <_RecordedAttemptSubmission>[];
   final List<PendingSyncItem> recordedReplayItems = <PendingSyncItem>[];
   final List<_RecordedAiAsk> recordedAiCalls = <_RecordedAiAsk>[];
+  bool commitBeforeThrowingNextAnswerError = false;
+  PlasApiException? nextSubmitAnswerError;
 
   @override
   Future<ExerciseAttemptDto> createExerciseAttempt({
@@ -154,9 +171,26 @@ class _SpyPlasRepository extends MockPlasRepository {
         attemptId: attemptId,
         questionId: questionId,
         answer: answer,
+        timeSpentSeconds: timeSpentSeconds,
         submissionRequestId: submissionRequestId,
       ),
     );
+    if (nextSubmitAnswerError != null) {
+      final err = nextSubmitAnswerError!;
+      final shouldCommitFirst = commitBeforeThrowingNextAnswerError;
+      nextSubmitAnswerError = null;
+      commitBeforeThrowingNextAnswerError = false;
+      if (shouldCommitFirst) {
+        await super.submitExerciseAnswer(
+          attemptId: attemptId,
+          questionId: questionId,
+          answer: answer,
+          timeSpentSeconds: timeSpentSeconds,
+          submissionRequestId: submissionRequestId,
+        );
+      }
+      throw err;
+    }
     return super.submitExerciseAnswer(
       attemptId: attemptId,
       questionId: questionId,
@@ -1067,6 +1101,154 @@ void main() {
           find.byKey(const ValueKey('exercise_error_back_button')),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'BUG-001: M08 freezes submissionKey and timeSpentSeconds when retrying unchanged answer after 503 and mints new key when answer changes',
+      (tester) async {
+        final clock = _FakeClock(DateTime.utc(2026, 11, 20, 9, 0));
+        final prefs = await SharedPreferences.getInstance();
+        final authService = _TestAuthService(initialUser: _defaultUser());
+        addTearDown(authService.dispose);
+        final repo = _SpyPlasRepository(initialProfile: _defaultProfile());
+
+        final router = GoRouter(
+          initialLocation: '/exercises/ex-01/session',
+          routes: [
+            GoRoute(
+              path: '/exercises/:exerciseId/session',
+              builder: (context, state) => ExerciseSessionScreen(
+                exerciseId: state.pathParameters['exerciseId']!,
+                submaterialId: 'sub-01',
+                clock: clock.call,
+              ),
+            ),
+            GoRoute(
+              path: '/exercise-attempts/:attemptId/review',
+              builder: (context, state) => ExerciseReviewScreen(
+                attemptId: state.pathParameters['attemptId']!,
+              ),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              authServiceProvider.overrideWithValue(authService),
+              plasRepositoryProvider.overrideWithValue(repo),
+            ],
+            child: MaterialApp.router(
+              theme: buildPlasTheme(),
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Advance clock by 12s while viewing Q1.
+        clock.advance(const Duration(seconds: 12));
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('question_mc_option_ex-01-q1-opt-1')),
+        );
+
+        // Simulate server committing Q1 then dropping connection with 503.
+        repo.commitBeforeThrowingNextAnswerError = true;
+        repo.nextSubmitAnswerError = PlasApiException.fromApiCode(
+          ApiErrorCodes.serverError,
+          statusCode: 503,
+        );
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('exercise_submit_cta')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('exercise_submission_error_view')),
+          findsOneWidget,
+        );
+        expect(find.text('Soal 1 dari 2'), findsOneWidget);
+        expect(repo.recordedAnswerCalls, hasLength(1));
+        expect(repo.recordedAnswerCalls.first.timeSpentSeconds, 12);
+
+        // Advance clock 15s and retry unchanged answer -> must reuse exact key & frozen 12s.
+        clock.advance(const Duration(seconds: 15));
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('exercise_submit_cta')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Soal 2 dari 2'), findsOneWidget);
+        expect(repo.recordedAnswerCalls, hasLength(2));
+        expect(
+          repo.recordedAnswerCalls[1].submissionRequestId,
+          repo.recordedAnswerCalls[0].submissionRequestId,
+        );
+        expect(repo.recordedAnswerCalls[1].timeSpentSeconds, 12);
+
+        // Q2: fail without commit, then change selected option -> must mint fresh UUID & elapsed.
+        clock.advance(const Duration(seconds: 5));
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('question_mc_option_ex-01-q2-opt-1')),
+        );
+        repo.commitBeforeThrowingNextAnswerError = false;
+        repo.nextSubmitAnswerError = PlasApiException.fromApiCode(
+          ApiErrorCodes.serverError,
+          statusCode: 503,
+        );
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('exercise_submit_cta')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('exercise_submission_error_view')),
+          findsOneWidget,
+        );
+        expect(repo.recordedAnswerCalls, hasLength(3));
+        final q2FirstKey = repo.recordedAnswerCalls[2].submissionRequestId;
+        expect(repo.recordedAnswerCalls[2].timeSpentSeconds, 5);
+
+        clock.advance(const Duration(seconds: 8));
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('question_mc_option_ex-01-q2-opt-2')),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('exercise_submission_error_view')),
+          findsNothing,
+        );
+
+        await _tapVisible(
+          tester,
+          find.byKey(const ValueKey('exercise_submit_cta')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(repo.recordedAnswerCalls, hasLength(4));
+        expect(
+          repo.recordedAnswerCalls[3].submissionRequestId,
+          isNot(q2FirstKey),
+        );
+        expect(
+          repo.recordedAnswerCalls[3].answer,
+          const McAnswer('ex-01-q2-opt-2'),
+        );
+        expect(repo.recordedAnswerCalls[3].timeSpentSeconds, 13);
+
+        await _tapVisible(tester, find.text('Kumpulkan'));
+        await tester.pumpAndSettle();
+        expect(find.byType(ExerciseReviewScreen), findsOneWidget);
+        expect(find.text('100%'), findsOneWidget);
       },
     );
   });

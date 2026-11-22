@@ -63,7 +63,8 @@ class _TestSessionScreenState extends ConsumerState<TestSessionScreen> {
   String? _creationRequestId;
   String? _submitAttemptKey;
   final Map<int, String> _startKeys = <int, String>{};
-  final Map<int, String> _answerKeys = <int, String>{};
+  final Map<int, ({String key, StudentAnswer answer})> _pendingAnswers =
+      <int, ({String key, StudentAnswer answer})>{};
 
   @override
   void initState() {
@@ -78,7 +79,7 @@ class _TestSessionScreenState extends ConsumerState<TestSessionScreen> {
       _creationRequestId = null;
       _submitAttemptKey = null;
       _startKeys.clear();
-      _answerKeys.clear();
+      _pendingAnswers.clear();
       _overview = null;
       _attemptId = null;
       _testType = null;
@@ -151,13 +152,7 @@ class _TestSessionScreenState extends ConsumerState<TestSessionScreen> {
     );
     for (final item in pendingForAttempt) {
       final path = _normalizeSyncPath(item.path);
-      final match = _testAnswerSeqPattern.firstMatch(path);
-      if (match != null) {
-        final seq = int.tryParse(match.group(1)!);
-        if (seq != null) {
-          _answerKeys[seq] = item.idempotencyKey;
-        }
-      } else if (path == '/test-attempts/$attemptId/submit') {
+      if (path == '/test-attempts/$attemptId/submit') {
         _submitAttemptKey = item.idempotencyKey;
       }
     }
@@ -234,6 +229,7 @@ class _TestSessionScreenState extends ConsumerState<TestSessionScreen> {
           _readyToSubmitFinal = false;
           _selectedAnswer = null;
           _pendingNextSequence = null;
+          _pendingAnswers.clear();
           _restorePendingKeysForAttempt(activeAttemptId);
         });
         return;
@@ -272,6 +268,7 @@ class _TestSessionScreenState extends ConsumerState<TestSessionScreen> {
         _readyToSubmitFinal = false;
         _selectedAnswer = null;
         _pendingNextSequence = null;
+        _pendingAnswers.clear();
         _allowDirectPop = false;
       });
     } on PlasApiException catch (error) {
@@ -449,7 +446,14 @@ class _TestSessionScreenState extends ConsumerState<TestSessionScreen> {
     if (answer == null) return;
 
     final sequence = question.sequence;
-    final answerKey = _answerKeys[sequence] ??= _uuid.v4();
+    final existingPending = _pendingAnswers[sequence];
+    final String answerKey;
+    if (existingPending != null && existingPending.answer == answer) {
+      answerKey = existingPending.key;
+    } else {
+      answerKey = _uuid.v4();
+      _pendingAnswers[sequence] = (key: answerKey, answer: answer);
+    }
 
     setState(() {
       _isSubmitting = true;
@@ -464,6 +468,7 @@ class _TestSessionScreenState extends ConsumerState<TestSessionScreen> {
         submissionRequestId: answerKey,
       );
       if (!mounted) return;
+      _pendingAnswers.remove(sequence);
 
       if (ack.nextSequence != null) {
         _pendingNextSequence = ack.nextSequence;
@@ -497,13 +502,16 @@ class _TestSessionScreenState extends ConsumerState<TestSessionScreen> {
         if (!mounted) return;
         setState(() {
           _isSubmitting = false;
+          _pendingAnswers.remove(sequence);
           _submissionError = null;
         });
         return;
       }
 
       if (error.code == ApiErrorCodes.alreadyAnswered) {
+        _pendingAnswers.remove(sequence);
         if (sequence < question.totalQuestions) {
+          _pendingNextSequence = sequence + 1;
           await _advanceToSequence(attemptId, sequence + 1);
         } else {
           setState(() {
@@ -519,12 +527,16 @@ class _TestSessionScreenState extends ConsumerState<TestSessionScreen> {
 
       if (error.code == ApiErrorCodes.attemptSubmitted ||
           error.code == ApiErrorCodes.alreadySubmitted) {
+        _pendingAnswers.remove(sequence);
         await _finishSubmittedSession(attemptId);
         return;
       }
 
       setState(() {
         _isSubmitting = false;
+        if (!error.isRetryable && error.statusCode != 500) {
+          _pendingAnswers.remove(sequence);
+        }
         _submissionError = error.message;
       });
     } catch (error) {
@@ -1179,6 +1191,9 @@ class _TestSessionScreenState extends ConsumerState<TestSessionScreen> {
               !hasPendingSubmit,
           onChanged: (next) {
             setState(() {
+              if (_selectedAnswer != next) {
+                _pendingAnswers.remove(question.sequence);
+              }
               _selectedAnswer = next;
               _submissionError = null;
             });
