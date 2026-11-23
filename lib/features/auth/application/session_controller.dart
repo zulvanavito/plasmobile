@@ -27,7 +27,8 @@ class SessionState {
   final bool isBusy;
   final String? bootstrapError;
 
-  bool get isClassLocked => profile?.preTestSubmitted ?? false;
+  bool get isClassLocked =>
+      (profile?.preTestSubmitted ?? false) && profile?.kelas != null;
 
   SessionState copyWith({
     AuthSessionUser? authUser,

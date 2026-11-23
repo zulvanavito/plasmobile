@@ -189,7 +189,7 @@ class MockPlasRepository implements PlasRepository {
         statusCode: 404,
       );
     }
-    if (_isPreTestSubmitted) {
+    if (_isPreTestSubmitted && profile.kelas != null) {
       throw PlasApiException.fromApiCode(
         ApiErrorCodes.classLocked,
         statusCode: 409,

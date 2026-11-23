@@ -23,6 +23,7 @@ import 'package:plasmobile/data/repositories/plas_repository.dart';
 import 'package:plasmobile/data/services/auth_service.dart';
 import 'package:plasmobile/features/auth/application/session_controller.dart';
 import 'package:plasmobile/features/auth/presentation/auth_screen.dart';
+import 'package:plasmobile/features/auth/presentation/onboarding_class_screen.dart';
 import 'package:plasmobile/features/exercise/presentation/exercise_review_screen.dart';
 import 'package:plasmobile/features/exercise/presentation/exercise_session_screen.dart';
 import 'package:plasmobile/features/history/presentation/history_screen.dart';
@@ -1078,6 +1079,103 @@ void main() {
         expect(authService.signOutCallCount, 1);
         expect(authService.currentUser, isNull);
         expect(find.byType(AuthScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'DBR-14 relaxed when preTestSubmitted == true and kelas == null: keeps user authenticated, allows joining new class in ProfileScreen, refreshes providers, then re-locks without overflow @ 2.0x',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final prefs = await SharedPreferences.getInstance();
+        final authService = _TestAuthService(initialUser: _defaultUser());
+        addTearDown(authService.dispose);
+        final repo = _SpyPlasRepository(
+          initialProfile: _defaultProfile(
+            withClass: false,
+            preTestSubmitted: true,
+          ),
+        );
+
+        await tester.pumpWidget(
+          _buildApp(prefs: prefs, authService: authService, repository: repo),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(OnboardingClassScreen), findsNothing);
+        expect(find.byType(LearnHomeScreen), findsOneWidget);
+
+        await _tapVisible(tester, find.text('Profil'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ProfileScreen), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('profile_rejoin_class_note')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('profile_class_locked_banner')),
+          findsNothing,
+        );
+        expect(tester.takeException(), isNull);
+        _assertNoEmDashInTexts(tester);
+
+        final fieldWidget = tester.widget<TextField>(
+          find.byKey(const ValueKey('profile_class_code_field')),
+        );
+        expect(fieldWidget.enabled, isTrue);
+        expect(
+          find.byKey(
+            const ValueKey('profile_class_quick_pick_kelas-ti2a-2026'),
+          ),
+          findsOneWidget,
+        );
+
+        await _enterVisibleText(
+          tester,
+          find.byKey(const ValueKey('profile_class_code_field')),
+          'TI-2A-2026',
+        );
+        final saveButtonFinder = find.byKey(
+          const ValueKey('profile_save_class_button'),
+        );
+        expect(tester.widget<ElevatedButton>(saveButtonFinder).onPressed, isNotNull);
+
+        final meBeforeSave = repo.getMeCalls;
+        final classesBeforeSave = repo.getClassesCalls;
+
+        await _tapVisible(tester, saveButtonFinder);
+        await tester.pumpAndSettle();
+
+        expect(repo.updatedClassIds, <String?>['kelas-ti2a-2026']);
+        expect(repo.getMeCalls, greaterThan(meBeforeSave));
+        expect(repo.getClassesCalls, greaterThan(classesBeforeSave));
+        expect(
+          find.byKey(const ValueKey('profile_class_success_banner')),
+          findsOneWidget,
+        );
+        expect(find.text('Pemrograman TypeScript A'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('profile_class_locked_banner')),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<TextField>(
+                find.byKey(const ValueKey('profile_class_code_field')),
+              )
+              .enabled,
+          isFalse,
+        );
+        expect(tester.widget<ElevatedButton>(saveButtonFinder).onPressed, isNull);
+        expect(tester.takeException(), isNull);
+        _assertNoEmDashInTexts(tester);
       },
     );
   });

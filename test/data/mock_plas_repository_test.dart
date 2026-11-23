@@ -197,6 +197,53 @@ void main() {
       );
     });
 
+    test('DBR-14 relaxation: student with kelas == null after Pre-Test can join a new class once, then locks again', () async {
+      final clock = _FakeClock(DateTime.utc(2026, 11, 19, 10, 0));
+      final repo = MockPlasRepository(clock: clock.call);
+
+      final created = await repo.createProfile(
+        const CreateProfileRequest(
+          nama: 'Sari Dewi',
+          nim: '220101043',
+          kelasId: null,
+        ),
+      );
+      expect(created.kelas, isNull);
+
+      await _completeTest(
+        repo,
+        clock,
+        testId: 'test-pre-01',
+        keyPrefix: 'pre-relax',
+      );
+
+      final meAfterPre = await repo.getMe();
+      expect(meAfterPre.preTestSubmitted, isTrue);
+      expect(meAfterPre.kelas, isNull);
+
+      final joined = await repo.updateClass('kelas-ti2a-2026');
+      expect(joined.kelas?.kelasId, 'kelas-ti2a-2026');
+      expect(joined.preTestSubmitted, isTrue);
+
+      await expectLater(
+        () => repo.updateClass('kelas-ti2b-2026'),
+        throwsA(
+          isA<PlasApiException>()
+              .having((e) => e.code, 'code', ApiErrorCodes.classLocked)
+              .having((e) => e.statusCode, 'statusCode', 409),
+        ),
+      );
+
+      await expectLater(
+        () => repo.updateClass(null),
+        throwsA(
+          isA<PlasApiException>()
+              .having((e) => e.code, 'code', ApiErrorCodes.classLocked)
+              .having((e) => e.statusCode, 'statusCode', 409),
+        ),
+      );
+    });
+
     test('exercise rules: DBR-05 limit 3/3, DBR-06, ST001, ST002, OP001, AN001, FIB >= 70%, and P13', () async {
       final clock = _FakeClock(DateTime.utc(2026, 11, 19, 10, 0));
       final repo = MockPlasRepository(clock: clock.call);
