@@ -64,9 +64,10 @@
 
 ## Tahap 5: Integrasi Backend Next.js & QA Akhir
 - [x] Persiapan konfigurasi Android & environment live (label aplikasi `PLAS-TypeScript`, `network_security_config` debug HTTP vs release HTTPS, adaptive launcher icon & splash vector Light Mode `#F8FAFC`, template `env.example.json` + validasi fail-fast `AppEnv.missingLiveConfigKeys()`, serta verifikasi build APK debug & release `minSdk 26`)
-- [ ] Uji end-to-end dengan `--dart-define=USE_MOCK=false` terhadap REST API Next.js dan Supabase Auth live
-- [ ] Verifikasi offline retry idempoten, skenario `DBR-14`/`DBR-15`, kuota `Asia/Makassar`, dan `minSdk 26` build APK live
-- [ ] Audit final `antislop` Delivery Gate & kesiapan uji Black Box / Usability
+- [x] Verifikasi E2E kontrak HTTP (`ApiPlasRepository` + `Dio` interceptors + `PlasApp` melalui `test/features/live_contract_e2e_test.dart`): onboarding HTTP `404`/`409`/`POST /me`/`PATCH /me/class`, offline retry idempoten `P2` + payload `P6`, `DBR-14`/`DBR-15`/`P12`/`P13`, dan AI Socratic WITA `504`/`already_processed`/`403 quota_exceeded`
+- [x] Audit final `antislop` Delivery Gate & kesiapan uji Black Box / Usability (kontras WCAG 2.1 AA via `contrast-check.py` pada `docs/qa/delivery-gate-report.md`, serta matriks Black Box `BB-01`..`BB-20`, protokol Task-Based Usability `UT-01`..`UT-06` + kuesioner UEQ-S 8 item, dan runbook live di `docs/qa/blackbox-usability-qa.md`)
+- [x] Sinkronisasi relaksasi `DBR-14` saat `profile.kelas == null` selaras dengan CRUD Kelas & Keluarkan Mahasiswa di `plasweb` (`SessionState.isClassLocked` hanya mengunci jika `preTestSubmitted && kelas != null`, `MockPlasRepository.updateClass`, `ProfileScreen` tetap mengizinkan bergabung kelas baru saat `kelas == null`, plus 4 unit/widget test baru)
+- [ ] Uji end-to-end dengan `--dart-define=USE_MOCK=false` terhadap REST API Next.js dan Supabase Auth live serta build APK live setelah server backend aktif
 
 ---
 

@@ -83,6 +83,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await ref
           .read(sessionControllerProvider.notifier)
           .joinClass(selected.kelasId);
+      await ref
+          .read(sessionControllerProvider.notifier)
+          .refreshProfile()
+          .catchError((_) {});
+      ref.invalidate(classesProvider);
       if (!mounted) return;
       _codeController.clear();
       setState(() {
@@ -508,6 +513,7 @@ class _ClassManagementSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentClass = session.profile?.kelas;
+    final preTestSubmitted = session.profile?.preTestSubmitted ?? false;
 
     return Container(
       key: const ValueKey('profile_class_section'),
@@ -525,7 +531,10 @@ class _ClassManagementSection extends StatelessWidget {
             style: PlasTypography.heading,
           ),
           const SizedBox(height: PlasSpacing.space3),
-          _CurrentClassCard(kelas: currentClass),
+          _CurrentClassCard(
+            kelas: currentClass,
+            preTestSubmitted: preTestSubmitted,
+          ),
           const SizedBox(height: PlasSpacing.space4),
           if (isLocked) ...[
             Container(
@@ -584,6 +593,10 @@ class _ClassManagementSection extends StatelessWidget {
                 ),
               ),
             ),
+            if (classActionSuccess != null) ...[
+              const SizedBox(height: PlasSpacing.space4),
+              _ClassSuccessBanner(message: classActionSuccess!),
+            ],
             if (classActionError != null) ...[
               const SizedBox(height: PlasSpacing.space4),
               PlasErrorView(
@@ -660,34 +673,7 @@ class _ClassManagementSection extends StatelessWidget {
             ),
             if (classActionSuccess != null) ...[
               const SizedBox(height: PlasSpacing.space4),
-              Container(
-                key: const ValueKey('profile_class_success_banner'),
-                padding: const EdgeInsets.all(PlasSpacing.space3),
-                decoration: BoxDecoration(
-                  color: PlasColors.successBg,
-                  borderRadius: BorderRadius.circular(PlasRadii.md),
-                  border: Border.all(color: PlasColors.successBorder),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Symbols.check_circle,
-                      size: 20,
-                      color: PlasColors.successText,
-                    ),
-                    const SizedBox(width: PlasSpacing.space2),
-                    Expanded(
-                      child: Text(
-                        classActionSuccess!,
-                        style: PlasTypography.body.copyWith(
-                          color: PlasColors.successText,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _ClassSuccessBanner(message: classActionSuccess!),
             ],
             if (classActionError != null) ...[
               const SizedBox(height: PlasSpacing.space4),
@@ -713,10 +699,52 @@ class _ClassManagementSection extends StatelessWidget {
   }
 }
 
+class _ClassSuccessBanner extends StatelessWidget {
+  const _ClassSuccessBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('profile_class_success_banner'),
+      padding: const EdgeInsets.all(PlasSpacing.space3),
+      decoration: BoxDecoration(
+        color: PlasColors.successBg,
+        borderRadius: BorderRadius.circular(PlasRadii.md),
+        border: Border.all(color: PlasColors.successBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Symbols.check_circle,
+            size: 20,
+            color: PlasColors.successText,
+          ),
+          const SizedBox(width: PlasSpacing.space2),
+          Expanded(
+            child: Text(
+              message,
+              style: PlasTypography.body.copyWith(
+                color: PlasColors.successText,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CurrentClassCard extends StatelessWidget {
-  const _CurrentClassCard({required this.kelas});
+  const _CurrentClassCard({
+    required this.kelas,
+    required this.preTestSubmitted,
+  });
 
   final ClassInfoDto? kelas;
+  final bool preTestSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -730,19 +758,34 @@ class _CurrentClassCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(PlasRadii.md),
           border: Border.all(color: PlasColors.borderDivider),
         ),
-        child: const Row(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
+            const Icon(
               Symbols.person,
               size: 20,
               color: PlasColors.textMuted,
             ),
-            SizedBox(width: PlasSpacing.space2),
+            const SizedBox(width: PlasSpacing.space2),
             Expanded(
-              child: Text(
-                'Belum tergabung kelas (Pengguna Umum)',
-                style: PlasTypography.body,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Belum tergabung kelas (Pengguna Umum)',
+                    style: PlasTypography.body,
+                  ),
+                  if (preTestSubmitted) ...[
+                    const SizedBox(height: PlasSpacing.space1),
+                    Text(
+                      'Anda tetap dapat bergabung ke kelas baru dengan Kode Kelas. Riwayat Pre-Test, Post-Test, dan latihan Anda akan otomatis tersinkron ke kelas baru.',
+                      key: const ValueKey('profile_rejoin_class_note'),
+                      style: PlasTypography.caption.copyWith(
+                        color: PlasColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],

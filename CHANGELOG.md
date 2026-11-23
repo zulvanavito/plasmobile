@@ -5,7 +5,18 @@ Format mengacu pada Keep a Changelog dengan tanggal zona lokal `Asia/Makassar` (
 
 ## [Unreleased]
 
+### Changed
+- **Sinkronisasi Relaksasi `DBR-14` saat `profile.kelas == null` (`plasweb` <-> `plasmobile`) (2026-11-23)**
+  - Memperbarui getter `SessionState.isClassLocked` di [`session_controller.dart`](lib/features/auth/application/session_controller.dart) menjadi `(profile?.preTestSubmitted ?? false) && profile?.kelas != null` agar mahasiswa berstatus `Pengguna Umum / Tanpa Kelas` (`kelas == null`, termasuk akibat kelas dihapus dosen `ON DELETE SET NULL` atau dikeluarkan dari kelas di `plasweb`) tetap diizinkan bergabung ke kelas baru via `PATCH /me/class`, sementara mahasiswa yang sudah berada dalam suatu kelas dan sudah mengumpulkan Pre-Test tetap terkunci dari perpindahan langsung antar-kelas; `_resolveGateForProfile` tetap mempertahankan akses ke `AuthGateStatus.authenticated`.
+  - Memperbarui guard `MockPlasRepository.updateClass` di [`mock_plas_repository.dart`](lib/data/repositories/mock_plas_repository.dart) menjadi `if (_isPreTestSubmitted && profile.kelas != null)` sehingga `kelas == null` bisa bergabung ke kelas baru sekali lalu terkunci kembali (`409 class_locked`).
+  - Memperbarui [`profile_screen.dart`](lib/features/profile/presentation/profile_screen.dart) (`ProfileScreen`) agar menampilkan informasi singkat `profile_rejoin_class_note` pada `_CurrentClassCard` saat `kelas == null && preTestSubmitted == true`, tetap menampilkan `_ClassSuccessBanner` setelah berhasil bergabung walau status langsung terkunci, serta menyegarkan profil dan `classesProvider` secara bersih setelah `joinClass`.
+  - Menambahkan 4 pengujian baru pada [`auth_onboarding_flow_test.dart`](test/features/auth_onboarding_flow_test.dart), [`mock_plas_repository_test.dart`](test/data/mock_plas_repository_test.dart), dan [`history_profile_flow_test.dart`](test/features/history_profile_flow_test.dart) (termasuk verifikasi tata letak `390x844 @ 2.0x`), serta menyelaraskan [`blackbox-usability-qa.md`](docs/qa/blackbox-usability-qa.md), [`BACKLOG.md`](BACKLOG.md), dan [`README.md`](README.md).
+
 ### Added
+- **Tahap 5 (Bagian 2): Uji E2E Kontrak HTTP & QA Akhir Mobile (2026-11-23)**
+  - Menambahkan 4 skenario uji integrasi E2E kontrak HTTP pada `test/features/live_contract_e2e_test.dart` yang menjalankan `PlasApp` langsung di atas `ApiPlasRepository` + `createPlasDio()` (`AuthInterceptor`, `IdempotencyInterceptor`, `ErrorInterceptor`) + `PendingSyncNotifier`: onboarding HTTP (`Authorization: Bearer`, `404 profile_not_found`, `409 nim_conflict`, `POST /me`, `PATCH /me/class`), offline retry idempoten (`Idempotency-Key` identik + payload `P6` kanonis), `DBR-14`/`DBR-15`/`P12`/`P13`, serta AI Socratic WITA (`35` detik timeout, `504 ai_timeout`, `200 already_processed`, `403 quota_exceeded`).
+  - Menambahkan laporan Audit Final `antislop` Delivery Gate dan hasil ukur `contrast-check.py` WCAG 2.1 AA pada `docs/qa/delivery-gate-report.md`.
+  - Menambahkan matriks pengujian Black Box (`BB-01` s.d. `BB-20`), protokol *task-based usability testing* (`UT-01` s.d. `UT-06`) + instrumen kuesioner **UEQ-S 8 item**, serta runbook integrasi live `USE_MOCK=false` pada `docs/qa/blackbox-usability-qa.md`.
 - **Tahap 5 (Bagian 1): Persiapan Konfigurasi Android & Environment Live (2026-11-22)**
   - Memperbarui [`AndroidManifest.xml`](android/app/src/main/AndroidManifest.xml) dengan `android:label="PLAS-TypeScript"` dan `android:networkSecurityConfig="@xml/network_security_config"`.
   - Menambahkan `network_security_config.xml` terpisah untuk rilis (`cleartextTrafficPermitted="false"` di `android/app/src/main/res/xml/`) dan debug (`cleartextTrafficPermitted="true"` di `android/app/src/debug/res/xml/` untuk akses server Next.js lokal seperti `http://10.0.2.2:3000/api`).
@@ -74,6 +85,7 @@ Format mengacu pada Keep a Changelog dengan tanggal zona lokal `Asia/Makassar` (
 
 ### Verification
 - `flutter analyze`: lulus (`No issues found!`).
-- `flutter test`: seluruh 140 test lulus (24 unit test pada `test/core/`, 30 unit test pada `test/data/`, 33 widget/unit test pada `test/widgets/`, dan 53 widget/flow test pada `test/features/`).
+- `flutter test`: seluruh 148 test lulus (24 unit test pada `test/core/`, 31 unit test pada `test/data/`, 33 widget/unit test pada `test/widgets/`, dan 60 widget/E2E flow test pada `test/features/`).
+- `contrast-check.py`: seluruh pasangan warna `PlasColors` lolos WCAG 2.1 AA (teks normal minimal `6.15:1` >= `4.5:1`; border/focus/ring non-teks minimal `4.07:1` >= `3.0:1`).
 - `flutter build apk --debug`: lulus (`build\app\outputs\flutter-apk\app-debug.apk`).
 - `flutter build apk --release`: lulus (`build\app\outputs\flutter-apk\app-release.apk`, 52.2MB, `minSdk = 26`).

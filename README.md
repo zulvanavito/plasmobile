@@ -24,7 +24,7 @@ Client `plasmobile` melayani alur belajar mahasiswa pada perangkat Android (`min
 |---|---|---|
 | Autentikasi & Onboarding | `M01` sampai `M04` | Masuk dengan email/kata sandi atau Google Sign-In melalui Supabase Auth, melengkapi identitas mahasiswa (`Nama` dan `NIM`), serta bergabung ke kelas atau memilih mode pengguna umum. |
 | Pembelajaran & Latihan | `M05` sampai `M09`, `M13` | Mengakses 7 materi dasar TypeScript, membaca submateri beserta blok kode, mengerjakan latihan (`MC`, `TF`, `FIB`) maksimal 3 percobaan per *SubMaterial*, meninjau hasil tanpa kunci jawaban di client, serta menggunakan asisten AI *Socratic* 3 level dengan kuota harian zona waktu `Asia/Makassar` (WITA). |
-| Evaluasi & Riwayat | `M10` sampai `M12`, `M14`, `M15` | Mengerjakan Pre-test dan Post-test secara linear tanpa timer, melihat ringkasan riwayat latihan maupun tes, serta memantau status profil dan keanggotaan kelas. |
+| Evaluasi & Riwayat | `M10` sampai `M12`, `M14`, `M15` | Mengerjakan Pre-test dan Post-test secara linear tanpa timer, melihat ringkasan riwayat latihan maupun tes, serta memantau status profil dan keanggotaan kelas (aturan `DBR-14` mengunci perpindahan antar-kelas pasca Pre-Test `SUBMITTED` selama `kelas != null`, sambil tetap mengizinkan pengguna tanpa kelas bergabung ke kelas baru). |
 
 ---
 
@@ -104,11 +104,15 @@ plasmobile/
 │   ├── data/                                     # DTO kontrak API, AuthService, Mock & Api repository
 │   ├── shared/widgets/                           # Komponen UI desain sistem PLAS
 │   └── features/                                 # Layar M01-M15 (auth, learn, ai, exercise, test_eval, history, profile)
+├── docs/
+│   └── qa/
+│       ├── delivery-gate-report.md               # Audit Final antislop Delivery Gate & WCAG 2.1 AA
+│       └── blackbox-usability-qa.md              # Matriks Black Box, UEQ-S 8 item, & runbook live
 ├── test/
 │   ├── core/                                     # 7 berkas unit test modul inti (24 test)
-│   ├── data/                                     # 4 berkas unit test data layer & kontrak API (30 test)
+│   ├── data/                                     # 4 berkas unit test data layer & kontrak API (31 test)
 │   ├── widgets/                                  # 5 berkas widget test komponen inti (33 test)
-│   └── features/                                 # 5 berkas integration/flow test layar M01-M15 (53 test)
+│   └── features/                                 # 6 berkas flow & E2E HTTP contract test (60 test)
 ├── analysis_options.yaml
 ├── BACKLOG.md                                    # Rencana kerja 5 tahap & catatan perbaikan bug
 ├── CHANGELOG.md                                  # Riwayat perubahan proyek
@@ -201,8 +205,8 @@ Perkembangan proyek mengacu pada lima tahap di [`BACKLOG.md`](./BACKLOG.md):
 |---|---|---|
 | Tahap 1 | Bootstrap proyek, arsitektur `lib/core/`, tema, router, dan unit test modul inti (24 test) | Selesai |
 | Tahap 2 | Bundling font lokal, aset SVG, dan widget inti Design System (`DESIGN.md v1.1`) (33 test) | Selesai |
-| Tahap 3 | DTO kontrak API `P6`, `AuthService`, `MockPlasRepository`, dan `ApiPlasRepository` (30 test) | Selesai |
-| Tahap 4 | Implementasi layar `M01` sampai `M15` + audit bugfix `BUG-001` hingga `BUG-004` (53 test) | Selesai |
-| Tahap 5 | Konfigurasi Android & env live selesai; lanjut uji `USE_MOCK=false`, `DBR-14`/`DBR-15`, dan QA akhir | Sedang berjalan |
+| Tahap 3 | DTO kontrak API `P6`, `AuthService`, `MockPlasRepository`, dan `ApiPlasRepository` (31 test) | Selesai |
+| Tahap 4 | Implementasi layar `M01` sampai `M15` + audit bugfix `BUG-001` hingga `BUG-004` | Selesai |
+| Tahap 5 | Konfigurasi Android & env live, E2E kontrak HTTP, sinkronisasi relaksasi `DBR-14` (`kelas == null`), Audit Delivery Gate (`docs/qa/`), dan dokumen Black Box/UEQ-S (total 148 test lulus); menunggu server Next.js & Supabase live untuk uji `USE_MOCK=false` | Menunggu backend live |
 
-Untuk daftar tugas per tahap dan keputusan teknis terkunci, lihat [`BACKLOG.md`](./BACKLOG.md). Catatan rinci setiap perubahan dan hasil verifikasi berkala terdokumentasi di [`CHANGELOG.md`](./CHANGELOG.md).
+Untuk daftar tugas per tahap dan keputusan teknis terkunci, lihat [`BACKLOG.md`](./BACKLOG.md). Catatan rinci setiap perubahan dan hasil verifikasi berkala terdokumentasi di [`CHANGELOG.md`](./CHANGELOG.md), sedangkan laporan audit QA akhir tersedia di [`docs/qa/`](./docs/qa/).

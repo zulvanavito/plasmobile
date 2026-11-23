@@ -1013,10 +1013,11 @@ void main() {
         );
         addTearDown(authService.dispose);
         final repository = _TestPlasRepository(
-          initialProfile: const StudentProfileDto(
+          initialProfile: StudentProfileDto(
             mahasiswaId: 'mhs-01',
             nama: 'Andi Fajar',
             nim: '2415091001',
+            kelas: MockSeedData.classes.first,
             preTestSubmitted: false,
             remainingAiQuota: 10,
           ),
@@ -1158,6 +1159,105 @@ void main() {
           container.read(authGateStatusProvider),
           AuthGateStatus.unauthenticated,
         );
+      },
+    );
+
+    test(
+      'SessionState.isClassLocked only locks when preTestSubmitted is true AND kelas != null',
+      () {
+        const nullProfileState = SessionState();
+        expect(nullProfileState.isClassLocked, isFalse);
+
+        const preFalseNoClass = SessionState(
+          profile: StudentProfileDto(
+            mahasiswaId: 'mhs-01',
+            nama: 'Andi Fajar',
+            nim: '2415091001',
+            kelas: null,
+            preTestSubmitted: false,
+            remainingAiQuota: 10,
+          ),
+        );
+        expect(preFalseNoClass.isClassLocked, isFalse);
+
+        final preFalseWithClass = SessionState(
+          profile: StudentProfileDto(
+            mahasiswaId: 'mhs-01',
+            nama: 'Andi Fajar',
+            nim: '2415091001',
+            kelas: MockSeedData.classes.first,
+            preTestSubmitted: false,
+            remainingAiQuota: 10,
+          ),
+        );
+        expect(preFalseWithClass.isClassLocked, isFalse);
+
+        const preTrueNoClass = SessionState(
+          profile: StudentProfileDto(
+            mahasiswaId: 'mhs-01',
+            nama: 'Andi Fajar',
+            nim: '2415091001',
+            kelas: null,
+            preTestSubmitted: true,
+            remainingAiQuota: 10,
+          ),
+        );
+        expect(preTrueNoClass.isClassLocked, isFalse);
+
+        final preTrueWithClass = SessionState(
+          profile: StudentProfileDto(
+            mahasiswaId: 'mhs-01',
+            nama: 'Andi Fajar',
+            nim: '2415091001',
+            kelas: MockSeedData.classes.first,
+            preTestSubmitted: true,
+            remainingAiQuota: 10,
+          ),
+        );
+        expect(preTrueWithClass.isClassLocked, isTrue);
+      },
+    );
+
+    test(
+      'bootstrap keeps student with preTestSubmitted == true and kelas == null authenticated without onboarding skip flag',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final prefs = await SharedPreferences.getInstance();
+        final authService = _TestAuthService(
+          initialUser: const AuthSessionUser(
+            userId: 'u1',
+            email: 'andi@plas.ac.id',
+            accessToken: 'jwt',
+          ),
+        );
+        addTearDown(authService.dispose);
+        final repository = _TestPlasRepository(
+          initialProfile: const StudentProfileDto(
+            mahasiswaId: 'mhs-01',
+            nama: 'Andi Fajar',
+            nim: '2415091001',
+            kelas: null,
+            preTestSubmitted: true,
+            remainingAiQuota: 10,
+          ),
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            authServiceProvider.overrideWithValue(authService),
+            plasRepositoryProvider.overrideWithValue(repository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(sessionControllerProvider.notifier).bootstrap();
+
+        expect(
+          container.read(authGateStatusProvider),
+          AuthGateStatus.authenticated,
+        );
+        expect(container.read(sessionControllerProvider).isClassLocked, isFalse);
       },
     );
   });
