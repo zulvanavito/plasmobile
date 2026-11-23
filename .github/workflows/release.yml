@@ -1,0 +1,64 @@
+name: Release Android APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run static analysis
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Prepare live env and Android release signing
+        env:
+          ENV_LIVE_JSON: ${{ secrets.ENV_LIVE_JSON }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_PROPERTIES: ${{ secrets.ANDROID_KEY_PROPERTIES }}
+        run: |
+          if [ -z "$ENV_LIVE_JSON" ] || [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEY_PROPERTIES" ]; then
+            echo "Missing one or more required secrets: ENV_LIVE_JSON, ANDROID_KEYSTORE_BASE64, ANDROID_KEY_PROPERTIES"
+            exit 1
+          fi
+          printf '%s' "$ENV_LIVE_JSON" > env.live.json
+          printf '%s' "$ANDROID_KEY_PROPERTIES" > android/key.properties
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/plas-release.jks
+
+      - name: Build release APK
+        run: flutter build apk --release --dart-define-from-file=env.live.json
+
+      - name: Rename APK for distribution
+        run: cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/PLAS-TypeScript.apk
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: build/app/outputs/flutter-apk/PLAS-TypeScript.apk
