@@ -104,11 +104,15 @@ plasmobile/
 │   ├── data/                                     # DTO kontrak API, AuthService, Mock & Api repository
 │   ├── shared/widgets/                           # Komponen UI desain sistem PLAS
 │   └── features/                                 # Layar M01-M15 (auth, learn, ai, exercise, test_eval, history, profile)
+├── docs/
+│   └── qa/
+│       ├── delivery-gate-report.md               # Audit Final antislop Delivery Gate & WCAG 2.1 AA
+│       └── blackbox-usability-qa.md              # Matriks Black Box, UEQ-S 8 item, & runbook live
 ├── test/
 │   ├── core/                                     # 7 berkas unit test modul inti (24 test)
 │   ├── data/                                     # 4 berkas unit test data layer & kontrak API (30 test)
 │   ├── widgets/                                  # 5 berkas widget test komponen inti (33 test)
-│   └── features/                                 # 5 berkas integration/flow test layar M01-M15 (53 test)
+│   └── features/                                 # 6 berkas flow & E2E HTTP contract test (57 test)
 ├── analysis_options.yaml
 ├── BACKLOG.md                                    # Rencana kerja 5 tahap & catatan perbaikan bug
 ├── CHANGELOG.md                                  # Riwayat perubahan proyek
@@ -203,6 +207,6 @@ Perkembangan proyek mengacu pada lima tahap di [`BACKLOG.md`](./BACKLOG.md):
 | Tahap 2 | Bundling font lokal, aset SVG, dan widget inti Design System (`DESIGN.md v1.1`) (33 test) | Selesai |
 | Tahap 3 | DTO kontrak API `P6`, `AuthService`, `MockPlasRepository`, dan `ApiPlasRepository` (30 test) | Selesai |
 | Tahap 4 | Implementasi layar `M01` sampai `M15` + audit bugfix `BUG-001` hingga `BUG-004` (53 test) | Selesai |
-| Tahap 5 | Konfigurasi Android & env live selesai; lanjut uji `USE_MOCK=false`, `DBR-14`/`DBR-15`, dan QA akhir | Sedang berjalan |
+| Tahap 5 | Konfigurasi Android & env live, 4 test E2E kontrak HTTP, Audit Delivery Gate (`docs/qa/`), dan dokumen Black Box/UEQ-S selesai; menunggu server Next.js & Supabase live untuk uji `USE_MOCK=false` | Menunggu backend live |
 
-Untuk daftar tugas per tahap dan keputusan teknis terkunci, lihat [`BACKLOG.md`](./BACKLOG.md). Catatan rinci setiap perubahan dan hasil verifikasi berkala terdokumentasi di [`CHANGELOG.md`](./CHANGELOG.md).
+Untuk daftar tugas per tahap dan keputusan teknis terkunci, lihat [`BACKLOG.md`](./BACKLOG.md). Catatan rinci setiap perubahan dan hasil verifikasi berkala terdokumentasi di [`CHANGELOG.md`](./CHANGELOG.md), sedangkan laporan audit QA akhir tersedia di [`docs/qa/`](./docs/qa/).
